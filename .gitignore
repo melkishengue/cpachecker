@@ -23,6 +23,7 @@ a.out
 /JUnit.html
 /.apt-generated
 /.factorypath
+/scripts/output/*
 
 # /lib/
 /lib/java
