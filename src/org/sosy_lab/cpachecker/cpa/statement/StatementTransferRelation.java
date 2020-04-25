@@ -52,9 +52,7 @@ public class StatementTransferRelation implements TransferRelation {
       System.out.println(
           cfaEdge.getCode()
               + " (at line "
-              + cfaEdge.getLineNumber()
-              + ") "
-              + cfaEdge.getEdgeType());
+              + cfaEdge.getLineNumber());
     }
 
     CFANode node = ((StatementState) element).getLocationNode();
