@@ -48,9 +48,13 @@ public class StatementTransferRelation implements TransferRelation {
   public Collection<StatementState> getAbstractSuccessorsForEdge(
       AbstractState element, Precision prec, CFAEdge cfaEdge) {
 
-    if ((cfaEdge.getEdgeType().equals(CFAEdgeType.DeclarationEdge))
-        || (cfaEdge.getEdgeType().equals(CFAEdgeType.StatementEdge))) {
-      System.out.println(cfaEdge.getRawStatement() + " (at line " + cfaEdge.getLineNumber() + ")");
+    if ((cfaEdge.getEdgeType().equals(CFAEdgeType.StatementEdge))) {
+      System.out.println(
+          cfaEdge.getCode()
+              + " (at line "
+              + cfaEdge.getLineNumber()
+              + ") "
+              + cfaEdge.getEdgeType());
     }
 
     CFANode node = ((StatementState) element).getLocationNode();
