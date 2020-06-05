@@ -59,7 +59,7 @@ import org.sosy_lab.cpachecker.util.states.MemoryLocation;
  * This Visitor returns the value from an expression.
  * The result may be null, i.e., the value is unknown.
  */
-public class ExpressionValueVisitor extends AbstractExpressionValueVisitor {
+public class ExpressionRangeVisitor extends AbstractExpressionRangeVisitor {
 
   private boolean missingPointer = false;
 
@@ -73,7 +73,7 @@ public class ExpressionValueVisitor extends AbstractExpressionValueVisitor {
    * @param pMachineModel where to get info about types, for casting and overflows
    * @param pLogger logging
    */
-  public ExpressionValueVisitor(RangeAnalysisState pState, String pFunctionName,
+  public ExpressionRangeVisitor(RangeAnalysisState pState, String pFunctionName,
       MachineModel pMachineModel, LogManagerWithoutDuplicates pLogger) {
     super(pFunctionName, pMachineModel, pLogger);
     readableState = pState;
@@ -274,9 +274,9 @@ public class ExpressionValueVisitor extends AbstractExpressionValueVisitor {
   protected static class MemoryLocationEvaluator
       extends DefaultCExpressionVisitor<MemoryLocation, UnrecognizedCodeException> {
 
-    private final ExpressionValueVisitor evv;
+    private final ExpressionRangeVisitor evv;
 
-    public MemoryLocationEvaluator(ExpressionValueVisitor pEvv) {
+    public MemoryLocationEvaluator(ExpressionRangeVisitor pEvv) {
       evv = pEvv;
     }
 

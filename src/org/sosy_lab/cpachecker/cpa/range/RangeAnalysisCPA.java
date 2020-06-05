@@ -136,7 +136,7 @@ public class RangeAnalysisCPA extends AbstractCPA
 
   private MemoryLocationValueHandler unknownValueHandler;
   private final ConstraintsStrengthenOperator constraintsStrengthenOperator;
-  private final ValueTransferOptions transferOptions;
+  private final RangeTransferOptions transferOptions;
   private final PrecAdjustmentOptions precisionAdjustmentOptions;
   private final PrecAdjustmentStatistics precisionAdjustmentStatistics;
 
@@ -161,7 +161,7 @@ public class RangeAnalysisCPA extends AbstractCPA
 
     constraintsStrengthenOperator =
         new ConstraintsStrengthenOperator(config, logger);
-    transferOptions = new ValueTransferOptions(config);
+    transferOptions = new RangeTransferOptions(config);
     precisionAdjustmentOptions = new PrecAdjustmentOptions(config, cfa);
     precisionAdjustmentStatistics = new PrecAdjustmentStatistics();
   }

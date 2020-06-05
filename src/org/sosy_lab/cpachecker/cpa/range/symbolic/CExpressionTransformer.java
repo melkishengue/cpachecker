@@ -45,7 +45,7 @@ import org.sosy_lab.cpachecker.cfa.ast.c.CTypeIdExpression;
 import org.sosy_lab.cpachecker.cfa.ast.c.CUnaryExpression;
 import org.sosy_lab.cpachecker.cfa.types.MachineModel;
 import org.sosy_lab.cpachecker.cfa.types.Type;
-import org.sosy_lab.cpachecker.cpa.range.ExpressionValueVisitor;
+import org.sosy_lab.cpachecker.cpa.range.ExpressionRangeVisitor;
 import org.sosy_lab.cpachecker.cpa.range.RangeAnalysisState;
 import org.sosy_lab.cpachecker.cpa.range.symbolic.type.SymbolicExpression;
 import org.sosy_lab.cpachecker.cpa.range.symbolic.type.SymbolicValueFactory;
@@ -261,7 +261,7 @@ public class CExpressionTransformer extends ExpressionTransformer
   private SymbolicExpression evaluateToValue(final CExpression pExpression)
       throws UnrecognizedCodeException {
 
-    ExpressionValueVisitor valueVisitor = getValueVisitor(valueState);
+    ExpressionRangeVisitor valueVisitor = getValueVisitor(valueState);
     MemoryLocation memLoc = valueVisitor.evaluateMemoryLocation(pExpression);
 
     if (memLoc == null) {
@@ -289,8 +289,8 @@ public class CExpressionTransformer extends ExpressionTransformer
     }
   }
 
-  private ExpressionValueVisitor getValueVisitor(final RangeAnalysisState pState) {
-    return new ExpressionValueVisitor(pState, functionName, machineModel, logger);
+  private ExpressionRangeVisitor getValueVisitor(final RangeAnalysisState pState) {
+    return new ExpressionRangeVisitor(pState, functionName, machineModel, logger);
   }
 
 

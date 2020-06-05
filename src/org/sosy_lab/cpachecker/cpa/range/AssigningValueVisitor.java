@@ -58,9 +58,9 @@ import org.sosy_lab.cpachecker.util.states.MemoryLocation;
 /**
  * Visitor that derives further information from an assume edge
  */
-class AssigningValueVisitor extends ExpressionValueVisitor {
+class AssigningValueVisitor extends ExpressionRangeVisitor {
 
-  private ExpressionValueVisitor nonAssigningValueVisitor;
+  private ExpressionRangeVisitor nonAssigningValueVisitor;
 
   private RangeAnalysisState assignableState;
 
@@ -68,7 +68,7 @@ class AssigningValueVisitor extends ExpressionValueVisitor {
 
   protected boolean truthValue = false;
 
-  private final ValueTransferOptions options;
+  private final RangeTransferOptions options;
 
   public AssigningValueVisitor(
       RangeAnalysisState assignableState,
@@ -78,10 +78,10 @@ class AssigningValueVisitor extends ExpressionValueVisitor {
       RangeAnalysisState state,
       MachineModel machineModel,
       LogManagerWithoutDuplicates logger,
-      ValueTransferOptions options) {
+      RangeTransferOptions options) {
     super(state, functionName, machineModel, logger);
     this.nonAssigningValueVisitor =
-        new ExpressionValueVisitor(state, functionName, machineModel, logger);
+        new ExpressionRangeVisitor(state, functionName, machineModel, logger);
     this.assignableState = assignableState;
     this.booleans = booleanVariables;
     this.truthValue = truthValue;
@@ -265,7 +265,7 @@ class AssigningValueVisitor extends ExpressionValueVisitor {
   }
 
   private MemoryLocation getMemoryLocation(CExpression pLValue) throws UnrecognizedCodeException {
-    ExpressionValueVisitor v = getVisitor();
+    ExpressionRangeVisitor v = getVisitor();
     assert pLValue instanceof CLeftHandSide;
     return checkNotNull(v.evaluateMemoryLocation(pLValue));
   }
@@ -294,7 +294,7 @@ class AssigningValueVisitor extends ExpressionValueVisitor {
     }
 
     if (expression instanceof CFieldReference || expression instanceof CArraySubscriptExpression) {
-      ExpressionValueVisitor evv = getVisitor();
+      ExpressionRangeVisitor evv = getVisitor();
       return evv.canBeEvaluated(expression);
     }
 
@@ -302,11 +302,11 @@ class AssigningValueVisitor extends ExpressionValueVisitor {
   }
 
   /** returns an initialized, empty visitor */
-  ExpressionValueVisitor getVisitor() {
+  ExpressionRangeVisitor getVisitor() {
     if (options.isIgnoreFunctionValue()) {
-      return new ExpressionValueVisitor(getState(), getFunctionName(), getMachineModel(), getLogger());
+      return new ExpressionRangeVisitor(getState(), getFunctionName(), getMachineModel(), getLogger());
     } else {
-      return new FunctionPointerExpressionValueVisitor(getState(), getFunctionName(), getMachineModel(), getLogger());
+      return new FunctionPointerExpressionRangeVisitor(getState(), getFunctionName(), getMachineModel(), getLogger());
     }
   }
 }

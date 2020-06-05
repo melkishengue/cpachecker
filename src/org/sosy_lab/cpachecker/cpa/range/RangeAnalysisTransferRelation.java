@@ -176,7 +176,7 @@ public class RangeAnalysisTransferRelation
     @Option(secure = true, description = "Use equality assumptions to assign values (e.g., (x == 0) => x = 0)")
     private boolean assignEqualityAssumptions = true;
 
-    public ValueTransferOptions(Configuration config) throws InvalidConfigurationException {
+    public RangeTransferOptions(Configuration config) throws InvalidConfigurationException {
       config.inject(this);
     }
 
@@ -197,7 +197,7 @@ public class RangeAnalysisTransferRelation
     }
   }
 
-  private final ValueTransferOptions options;
+  private final RangeTransferOptions options;
   private final @Nullable RangeAnalysisCPAStatistics stats;
 
   private final ConstraintsStrengthenOperator constraintsStrengthenOperator;
@@ -243,7 +243,7 @@ public class RangeAnalysisTransferRelation
   public RangeAnalysisTransferRelation(
       LogManager pLogger,
       CFA pCfa,
-      ValueTransferOptions pOptions,
+      RangeTransferOptions pOptions,
       MemoryLocationValueHandler pUnknownValueHandler,
       ConstraintsStrengthenOperator pConstraintsStrengthenOperator,
       @Nullable RangeAnalysisCPAStatistics pStats) {
@@ -301,7 +301,7 @@ public class RangeAnalysisTransferRelation
         || callEdge.getSuccessor().getFunctionDefinition().getType().takesVarArgs();
 
     // visitor for getting the values of the actual parameters in caller function context
-    final ExpressionValueVisitor visitor = getVisitor();
+    final ExpressionRangeVisitor visitor = getVisitor();
 
     // get value of actual parameter in caller function context
     for (int i = 0; i < parameters.size(); i++) {
@@ -356,7 +356,7 @@ public class RangeAnalysisTransferRelation
       throws UnrecognizedCodeException {
 
     // visitor must use the initial (previous) state, because there we have all information about variables
-    ExpressionValueVisitor evv = getVisitor();
+    ExpressionRangeVisitor evv = getVisitor();
 
     // clone state, because will be changed through removing all variables of current function's scope.
     // The assignment of the global 'state' is safe, because the 'old state'
@@ -417,7 +417,7 @@ public class RangeAnalysisTransferRelation
 
       // we expect left hand side of the expression to be a variable
 
-      ExpressionValueVisitor v = getVisitor(newElement, callerFunctionName);
+      ExpressionRangeVisitor v = getVisitor(newElement, callerFunctionName);
 
       Value newValue = null;
       boolean valueExists = returnVarName.isPresent() && state.contains(functionReturnVar);
@@ -496,7 +496,7 @@ public class RangeAnalysisTransferRelation
   private Optional<MemoryLocation> getMemoryLocation(
       final CLeftHandSide pExpression,
       final Value pRightHandSideValue,
-      final ExpressionValueVisitor pValueVisitor)
+      final ExpressionRangeVisitor pValueVisitor)
       throws UnrecognizedCodeException {
 
     MemoryLocation assignedVarName = pValueVisitor.evaluateMemoryLocation(pExpression);
@@ -520,7 +520,7 @@ public class RangeAnalysisTransferRelation
   }
 
   private OptionalInt getIndex(JArraySubscriptExpression pExpression) {
-    final ExpressionValueVisitor evv = getVisitor();
+    final ExpressionRangeVisitor evv = getVisitor();
     final Value indexValue = pExpression.getSubscriptExpression().accept(evv);
 
     if (indexValue.isUnknown()) {
@@ -569,7 +569,7 @@ public class RangeAnalysisTransferRelation
     expression = simplifiedExpression.getFirst();
     truthValue = simplifiedExpression.getSecond();
 
-    final ExpressionValueVisitor evv = getVisitor();
+    final ExpressionRangeVisitor evv = getVisitor();
     final Type booleanType = getBooleanType(expression);
 
     // get the value of the expression (either true[1L], false[0L], or unknown[null])
@@ -702,7 +702,7 @@ public class RangeAnalysisTransferRelation
     }
 
     if (init instanceof AInitializerExpression) {
-      ExpressionValueVisitor evv = getVisitor();
+      ExpressionRangeVisitor evv = getVisitor();
       AExpression exp = ((AInitializerExpression) init).getExpression();
       initialValue = getExpressionValue(exp, declarationType, evv);
 
@@ -772,7 +772,7 @@ public class RangeAnalysisTransferRelation
         || pType instanceof JArrayType;
   }
 
-  private boolean isMissingCExpressionInformation(ExpressionValueVisitor pEvv,
+  private boolean isMissingCExpressionInformation(ExpressionRangeVisitor pEvv,
       ARightHandSide pExp) {
 
     return pExp instanceof CExpression && pEvv.hasMissingPointer();
@@ -826,7 +826,7 @@ public class RangeAnalysisTransferRelation
     final CFunctionCallExpression functionCallExp = pFunctionCallAssignment.getFunctionCallExpression();
     final CLeftHandSide leftSide = pFunctionCallAssignment.getLeftHandSide();
     final CType leftSideType = leftSide.getExpressionType();
-    final ExpressionValueVisitor evv = getVisitor();
+    final ExpressionRangeVisitor evv = getVisitor();
 
     RangeAnalysisState newElement = RangeAnalysisState.copyOf(state);
 
@@ -885,7 +885,7 @@ public class RangeAnalysisTransferRelation
 
     } else if (op1 instanceof CFieldReference) {
 
-      ExpressionValueVisitor v = getVisitor();
+      ExpressionRangeVisitor v = getVisitor();
 
       MemoryLocation memLoc = v.evaluateMemoryLocation((CFieldReference) op1);
 
@@ -901,7 +901,7 @@ public class RangeAnalysisTransferRelation
       // array cell
       if (op1 instanceof CArraySubscriptExpression) {
 
-        ExpressionValueVisitor v = getVisitor();
+        ExpressionRangeVisitor v = getVisitor();
 
         MemoryLocation memLoc = v.evaluateMemoryLocation((CLeftHandSide) op1);
 
@@ -914,7 +914,7 @@ public class RangeAnalysisTransferRelation
         }
       } else if (op1 instanceof JArraySubscriptExpression) {
         JArraySubscriptExpression arrayExpression = (JArraySubscriptExpression) op1;
-        ExpressionValueVisitor evv = getVisitor();
+        ExpressionRangeVisitor evv = getVisitor();
 
         ArrayValue arrayToChange = getInnerMostArray(arrayExpression);
         Value maybeIndex = arrayExpression.getSubscriptExpression().accept(evv);
@@ -965,7 +965,7 @@ public class RangeAnalysisTransferRelation
   /** This method analyses the expression with the visitor and assigns the value to lParam.
    * The method returns a new state, that contains (a copy of) the old state and the new assignment. */
   private RangeAnalysisState handleAssignmentToVariable(
-      MemoryLocation assignedVar, final Type lType, ARightHandSide exp, ExpressionValueVisitor visitor)
+      MemoryLocation assignedVar, final Type lType, ARightHandSide exp, ExpressionRangeVisitor visitor)
           throws UnrecognizedCodeException {
     // here we clone the state, because we get new information or must forget it.
     RangeAnalysisState newElement = RangeAnalysisState.copyOf(state);
@@ -977,7 +977,7 @@ public class RangeAnalysisTransferRelation
    *  to the given value Analysis state.
    */
   private void handleAssignmentToVariable(RangeAnalysisState newElement,
-      MemoryLocation assignedVar, final Type lType, ARightHandSide exp, ExpressionValueVisitor visitor)
+      MemoryLocation assignedVar, final Type lType, ARightHandSide exp, ExpressionRangeVisitor visitor)
       throws UnrecognizedCodeException {
 
     // c structs have to be handled seperatly, because we do not have a value object representing structs
@@ -1052,7 +1052,7 @@ public class RangeAnalysisTransferRelation
   private void handleAssignmentToStruct(RangeAnalysisState pNewElement,
       MemoryLocation pAssignedVar,
       CCompositeType pLType, CExpression pExp,
-      ExpressionValueVisitor pVisitor) throws UnrecognizedCodeException {
+      ExpressionRangeVisitor pVisitor) throws UnrecognizedCodeException {
 
     long offset = 0L;
     for (CCompositeType.CCompositeTypeMemberDeclaration memberType : pLType.getMembers()) {
@@ -1178,10 +1178,10 @@ public class RangeAnalysisTransferRelation
     }
   }
 
-  private class  FieldAccessExpressionValueVisitor extends ExpressionValueVisitor {
+  private class  FieldAccessExpressionRangeVisitor extends ExpressionRangeVisitor {
     private final RTTState jortState;
 
-    public FieldAccessExpressionValueVisitor(RTTState pJortState, RangeAnalysisState pState) {
+    public FieldAccessExpressionRangeVisitor(RTTState pJortState, RangeAnalysisState pState) {
       super(pState, functionName, machineModel, logger);
       jortState = pJortState;
     }
@@ -1219,7 +1219,7 @@ public class RangeAnalysisTransferRelation
   }
 
   private Value getExpressionValue(
-      AExpression expression, final Type type, ExpressionValueVisitor evv)
+      AExpression expression, final Type type, ExpressionRangeVisitor evv)
       throws UnrecognizedCodeException {
     if (!isTrackedType(type)) {
       return UnknownValue.getInstance();
@@ -1369,7 +1369,7 @@ public class RangeAnalysisTransferRelation
                     targetPointer.getFileLocation(),
                     targetPointer.getExpressionType(),
                     targetPointer);
-            ExpressionValueVisitor evv = getVisitor();
+            ExpressionRangeVisitor evv = getVisitor();
             Value value;
             if (exp instanceof JRightHandSide) {
               value = evv.evaluate((JRightHandSide) exp, (JType) exp.getExpressionType());
@@ -1618,7 +1618,7 @@ public class RangeAnalysisTransferRelation
 
   private Value handleMissingInformationRightJExpression(RTTState pJortState) {
     return missingInformationRightJExpression.accept(
-        new FieldAccessExpressionValueVisitor(pJortState, oldState));
+        new FieldAccessExpressionRangeVisitor(pJortState, oldState));
   }
 
   private RangeAnalysisState handleNotScopedVariable(RTTState rttState, RangeAnalysisState newElement) {
@@ -1650,15 +1650,15 @@ public class RangeAnalysisTransferRelation
   }
 
   /** returns an initialized, empty visitor */
-  private ExpressionValueVisitor getVisitor(RangeAnalysisState pState, String pFunctionName) {
+  private ExpressionRangeVisitor getVisitor(RangeAnalysisState pState, String pFunctionName) {
     if (options.isIgnoreFunctionValue()) {
-      return new ExpressionValueVisitor(pState, pFunctionName, machineModel, logger);
+      return new ExpressionRangeVisitor(pState, pFunctionName, machineModel, logger);
     } else {
-      return new FunctionPointerExpressionValueVisitor(pState, pFunctionName, machineModel, logger);
+      return new FunctionPointerExpressionRangeVisitor(pState, pFunctionName, machineModel, logger);
     }
   }
 
-  private ExpressionValueVisitor getVisitor() {
+  private ExpressionRangeVisitor getVisitor() {
     return getVisitor(state, functionName);
   }
 }

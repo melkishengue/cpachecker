@@ -40,9 +40,9 @@ import org.sosy_lab.cpachecker.exceptions.UnrecognizedCodeException;
 import org.sosy_lab.cpachecker.util.states.MemoryLocation;
 import org.sosy_lab.cpachecker.util.states.PointerToMemoryLocation;
 
-class FunctionPointerExpressionValueVisitor extends ExpressionValueVisitor {
+class FunctionPointerExpressionRangeVisitor extends ExpressionRangeVisitor {
 
-  public FunctionPointerExpressionValueVisitor(RangeAnalysisState pState, String pFunctionName,
+  public FunctionPointerExpressionRangeVisitor(RangeAnalysisState pState, String pFunctionName,
       MachineModel pMachineModel, LogManagerWithoutDuplicates pLogger) {
     super(pState, pFunctionName, pMachineModel, pLogger);
   }
@@ -89,7 +89,7 @@ public MemoryLocation evaluateMemLocForArraySlot(
 
  private static class FunctionPointerMemoryLocationEvaluator extends MemoryLocationEvaluator {
 
-   public FunctionPointerMemoryLocationEvaluator(ExpressionValueVisitor pEvv) {
+   public FunctionPointerMemoryLocationEvaluator(ExpressionRangeVisitor pEvv) {
      super(pEvv);
    }
 

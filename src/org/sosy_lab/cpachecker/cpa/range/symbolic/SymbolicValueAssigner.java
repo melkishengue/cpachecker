@@ -41,7 +41,7 @@ import org.sosy_lab.cpachecker.cfa.types.c.CTypedefType;
 import org.sosy_lab.cpachecker.cfa.types.c.CVoidType;
 import org.sosy_lab.cpachecker.cfa.types.java.JSimpleType;
 import org.sosy_lab.cpachecker.cfa.types.java.JType;
-import org.sosy_lab.cpachecker.cpa.range.ExpressionValueVisitor;
+import org.sosy_lab.cpachecker.cpa.range.ExpressionRangeVisitor;
 import org.sosy_lab.cpachecker.cpa.range.RangeAnalysisState;
 import org.sosy_lab.cpachecker.cpa.range.symbolic.type.SymbolicIdentifier;
 import org.sosy_lab.cpachecker.cpa.range.symbolic.type.SymbolicValue;
@@ -100,7 +100,7 @@ public class SymbolicValueAssigner implements MemoryLocationValueHandler {
    */
   @Override
   public void handle(MemoryLocation pVarLocation, Type pVarType,
-      RangeAnalysisState pState, ExpressionValueVisitor pValueVisitor)
+      RangeAnalysisState pState, ExpressionRangeVisitor pValueVisitor)
       throws UnrecognizedCodeException {
 
     if (isEligibleForSymbolicValue(pVarType)) {
@@ -134,7 +134,7 @@ public class SymbolicValueAssigner implements MemoryLocationValueHandler {
       RangeAnalysisState pState,
       MemoryLocation pVarLocation,
       Type pVarType,
-      ExpressionValueVisitor pValueVisitor)
+      ExpressionRangeVisitor pValueVisitor)
       throws UnrecognizedCodeException {
 
     if (pVarType instanceof JType) {
@@ -160,7 +160,7 @@ public class SymbolicValueAssigner implements MemoryLocationValueHandler {
   }
 
   private void addSymbolicTracking(RangeAnalysisState pState,
-      MemoryLocation pVarLocation, CType pVarType, ExpressionValueVisitor pValueVisitor)
+      MemoryLocation pVarLocation, CType pVarType, ExpressionRangeVisitor pValueVisitor)
       throws UnrecognizedCodeException {
 
     final CType canonicalType = pVarType.getCanonicalType();
@@ -197,7 +197,7 @@ public class SymbolicValueAssigner implements MemoryLocationValueHandler {
 
   private void fillStructWithSymbolicIdentifiers(
       RangeAnalysisState pState, MemoryLocation pStructLocation, CCompositeType pStructType,
-      ExpressionValueVisitor pValueVisitor)
+      ExpressionRangeVisitor pValueVisitor)
       throws UnrecognizedCodeException {
 
     assert handleStructs;
@@ -229,7 +229,7 @@ public class SymbolicValueAssigner implements MemoryLocationValueHandler {
       final RangeAnalysisState pState,
       final MemoryLocation pArrayLocation,
       final CArrayType pArrayType,
-      final ExpressionValueVisitor pValueVisitor
+      final ExpressionRangeVisitor pValueVisitor
   ) throws UnrecognizedCodeException {
 
     if (!handleArrays) {

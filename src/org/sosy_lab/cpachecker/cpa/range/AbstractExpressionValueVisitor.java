@@ -135,7 +135,7 @@ import org.sosy_lab.cpachecker.util.BuiltinFunctions;
  * Furthermore, the visitor abstracts from using abstract states
  * to get values stored in the memory of a program.
  */
-public abstract class AbstractExpressionValueVisitor
+public abstract class AbstractExpressionRangeVisitor
     extends DefaultCExpressionVisitor<Value, UnrecognizedCodeException>
     implements CRightHandSideVisitor<Value, UnrecognizedCodeException>,
         JRightHandSideVisitor<Value, NoException>,
@@ -165,7 +165,7 @@ public abstract class AbstractExpressionValueVisitor
    * @param pMachineModel where to get info about types, for casting and overflows
    * @param pLogger logging
    */
-  public AbstractExpressionValueVisitor(String pFunctionName,
+  public AbstractExpressionRangeVisitor(String pFunctionName,
       MachineModel pMachineModel, LogManagerWithoutDuplicates pLogger) {
 
     //this.state = pState;

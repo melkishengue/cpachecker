@@ -49,11 +49,11 @@ import org.sosy_lab.cpachecker.cpa.range.type.range;
 import org.sosy_lab.cpachecker.exceptions.UnrecognizedCodeException;
 
 /**
- * Unit tests for {@link ExpressionValueVisitor}
- * and {@link AbstractExpressionValueVisitor}.
+ * Unit tests for {@link ExpressionRangeVisitor}
+ * and {@link AbstractExpressionRangeVisitor}.
  */
 @RunWith(Parameterized.class)
-public class ExpressionValueVisitorTest {
+public class ExpressionRangeVisitorTest {
 
   @Parameters(name="{0}, symbolicValues={1}")
   public static List<Object[]> getParameters() {
@@ -94,14 +94,14 @@ public class ExpressionValueVisitorTest {
   private final static CSimpleType LONG_DOUBLE = CNumericTypes.LONG_DOUBLE;
 
   private LogManagerWithoutDuplicates logger;
-  private ExpressionValueVisitor evv;
+  private ExpressionRangeVisitor evv;
 
   @Before
   public void init() {
     logger = new LogManagerWithoutDuplicates(LogManager.createTestLogManager());
 
     evv =
-        new ExpressionValueVisitor(
+        new ExpressionRangeVisitor(
             new RangeAnalysisState(machineModel), "dummy_function", machineModel, logger);
   }
 
@@ -366,7 +366,7 @@ public class ExpressionValueVisitorTest {
   private void checkCast(double in, double expectedOut, CType outType) {
     NumericValue inValue = new NumericValue(in);
 
-    final Value value = AbstractExpressionValueVisitor
+    final Value value = AbstractExpressionRangeVisitor
         .castCValue(inValue, outType, machineModel, logger, FileLocation.DUMMY);
 
     assertThat(value).isInstanceOf(NumericValue.class);
@@ -376,7 +376,7 @@ public class ExpressionValueVisitorTest {
   private void checkCast(float in, double expectedOut, CType outType) {
     NumericValue inValue = new NumericValue(in);
 
-    final Value value = AbstractExpressionValueVisitor
+    final Value value = AbstractExpressionRangeVisitor
         .castCValue(inValue, outType, machineModel, logger, FileLocation.DUMMY);
 
     assertThat(value).isInstanceOf(NumericValue.class);
@@ -386,7 +386,7 @@ public class ExpressionValueVisitorTest {
   private void checkCast(float in, float expectedOut, CType outType) {
     NumericValue inValue = new NumericValue(in);
 
-    final Value value = AbstractExpressionValueVisitor
+    final Value value = AbstractExpressionRangeVisitor
         .castCValue(inValue, outType, machineModel, logger, FileLocation.DUMMY);
 
     assertThat(value).isInstanceOf(NumericValue.class);
@@ -397,7 +397,7 @@ public class ExpressionValueVisitorTest {
     NumericValue inValue = new NumericValue(in);
 
     final Value value =
-        AbstractExpressionValueVisitor.castCValue(
+        AbstractExpressionRangeVisitor.castCValue(
             inValue, outType, machineModel, logger, FileLocation.DUMMY);
 
     assertThat(value).isInstanceOf(NumericValue.class);

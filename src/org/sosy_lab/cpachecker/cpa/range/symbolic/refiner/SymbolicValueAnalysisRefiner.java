@@ -90,7 +90,7 @@ import org.sosy_lab.cpachecker.cpa.constraints.domain.ConstraintsSolver;
 import org.sosy_lab.cpachecker.cpa.constraints.domain.ConstraintsState;
 import org.sosy_lab.cpachecker.cpa.constraints.refiner.precision.ConstraintsPrecision;
 import org.sosy_lab.cpachecker.cpa.constraints.refiner.precision.RefinableConstraintsPrecision;
-import org.sosy_lab.cpachecker.cpa.range.ExpressionValueVisitor;
+import org.sosy_lab.cpachecker.cpa.range.ExpressionRangeVisitor;
 import org.sosy_lab.cpachecker.cpa.range.RangeAnalysisCPA;
 import org.sosy_lab.cpachecker.cpa.range.RangeAnalysisState;
 import org.sosy_lab.cpachecker.cpa.range.RangeAnalysisState.rangeAndType;
@@ -313,8 +313,8 @@ public class SymbolicRangeAnalysisRefiner
                     .getInstance()));
               }
             }
-            ExpressionValueVisitor valueVisitor =
-                new ExpressionValueVisitor(
+            ExpressionRangeVisitor valueVisitor =
+                new ExpressionRangeVisitor(
                     currentValueState,
                     currentEdge.getSuccessor().getFunctionName(),
                     machineModel,

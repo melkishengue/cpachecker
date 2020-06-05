@@ -186,7 +186,7 @@ public final class RangeAnalysisState
   public void assignConstant(
       SymbolicIdentifier pSymbolicIdentifier,
       Value pValue,
-      AbstractExpressionValueVisitor pValueVisitor) {
+      AbstractExpressionRangeVisitor pValueVisitor) {
     for (Entry<MemoryLocation, ValueAndType> entry : constantsMap.entrySet()) {
       CType memLocType = (CType) entry.getValue().getType();
       Value typedValue = pValue;
