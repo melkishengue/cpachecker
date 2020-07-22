@@ -22,13 +22,14 @@ package org.sosy_lab.cpachecker.cpa.value.range;
 public class RangeValueMain {
 
   public static void main(String[] args) {
-    String rawRangeInterval = "(, (min::a=1 min::b=2)] U [(min::a=3 min::b=4),)";
+    // String rawRangeInterval = "(null, (min::a=1 min::b=2)] U [(min::a=3 min::b=4),null)";
+    String rawRangeInterval = "(null, (min::a=1 min::b=2)]";
     Range range = new Range(rawRangeInterval);
 
     System.out.println(range);
     boolean isLeftOpen = range.isLeftOpen();
     boolean isRightOpen = range.isRightOpen();
-    System.out.println(isLeftOpen);
-    System.out.println(isRightOpen);
+    System.out.println("The start range is null: " + isLeftOpen);
+    System.out.println("The end range is null: " + isRightOpen);
   }
 }
