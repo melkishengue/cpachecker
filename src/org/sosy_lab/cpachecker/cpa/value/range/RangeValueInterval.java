@@ -24,23 +24,23 @@ import java.util.regex.Pattern;
 public class RangeValueInterval {
   boolean isLeftOpen;
   boolean isRightOpen;
-  RangeValue minRange;
-  RangeValue maxRange;
+  RangeValue startRange;
+  RangeValue endRange;
 
   public boolean isLeftOpen() {
-    return this.minRange.isNull();
+    return this.startRange.isNull();
   }
 
   public boolean isRightOpen() {
-    return this.maxRange.isNull();
+    return this.endRange.isNull();
   }
 
-  public RangeValue getMinRange() {
-    return minRange;
+  public RangeValue getStartRange() {
+    return startRange;
   }
 
-  public RangeValue getMaxRange() {
-    return maxRange;
+  public RangeValue getEndRange() {
+    return endRange;
   }
 
   public RangeValueInterval(String rawRangeValue) {
@@ -51,30 +51,23 @@ public class RangeValueInterval {
 
     String[] arrOfStr = rawRangeValueNoBraces.split(Pattern.quote(","), 5);
 
-    String rawLeftRangeValue = arrOfStr[0].trim();
-    String rawRightRangeValue = arrOfStr[1].trim();
+    String rawStartRangeValue = arrOfStr[0].trim();
+    String rawEndRangeValue = arrOfStr[1].trim();
 
-    if (arrOfStr[0].equals("")) {
-      rawLeftRangeValue = "null";
-    }
+    // if nothing specified set it to null
+    rawStartRangeValue = arrOfStr[0].equals("") ? "null" : rawStartRangeValue;
+    rawEndRangeValue = arrOfStr[1].equals("") ? "null" : rawEndRangeValue;
 
-    if (arrOfStr[1].equals("")) {
-      rawRightRangeValue = "null";
-    }
-
-    RangeValue leftRangeValue = new RangeValue(rawLeftRangeValue);
-    RangeValue rightRangeValue = new RangeValue(rawRightRangeValue);
-
-    this.minRange = leftRangeValue;
-    this.maxRange = rightRangeValue;
+    this.startRange = new RangeValue(rawStartRangeValue);
+    this.endRange = new RangeValue(rawEndRangeValue);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
 
-    sb.append(this.minRange.toString());
-    sb.append(this.maxRange.toString());
+    sb.append(this.startRange.toString());
+    sb.append(this.endRange.toString());
 
     return sb.toString();
   }

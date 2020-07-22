@@ -19,7 +19,9 @@
  */
 package org.sosy_lab.cpachecker.cpa.value.range;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -29,7 +31,7 @@ public class RangeValue {
   List<String> variablesFullyQualified = new ArrayList<>();
   HashMap<String, Object> variablesMap = new HashMap<>();
   HashMap<String, Object> variablesMapFullyQualified = new HashMap<>();
-  String functionName = "UNKNOWN";
+  String scope = "UNKNOWN";
   boolean isNull;
   String rawRange;
 
@@ -65,12 +67,12 @@ public class RangeValue {
     variablesMapFullyQualified = pVariablesMapFullyQualified;
   }
 
-  public String getFunctionName() {
-    return functionName;
+  public String getScope() {
+    return scope;
   }
 
-  public void setFunctionName(String pFunctionName) {
-    functionName = pFunctionName;
+  public void setFunctionName(String pScope) {
+    scope = pScope;
   }
 
   public boolean isNull() {
@@ -99,33 +101,40 @@ public class RangeValue {
 
       String[] arrOfStr = rawRangeNoBraces.split(" ", 5);
       for (String a : arrOfStr) {
-        String[] arrOfStrVarValue = a.split("::", 5);
-        this.functionName = arrOfStrVarValue[0];
+        this.scope = this.getScopeFromRawString(a);
+        String[] variableValuePair = this.getScopeValue(a);
 
-        String[] arrOfStrVar = arrOfStrVarValue[1].split("=");
-        this.variables.add(arrOfStrVar[0]);
+        this.variables.add(variableValuePair[0]);
+        this.variablesMap.put(variableValuePair[0], variableValuePair[1]);
 
-        this.variablesMap.put(arrOfStrVar[0], arrOfStrVar[1]);
-
-        String fullyQualifiedName = this.functionName + "::" + arrOfStrVar[0];
-
-        this.variablesFullyQualified.add(fullyQualifiedName);
-        this.variablesMapFullyQualified.put(fullyQualifiedName, arrOfStrVar[1]);
+        this.variablesFullyQualified.add(this.scope + "::" + variableValuePair[0]);
+        this.variablesMapFullyQualified.put(this.scope, variableValuePair[1]);
       }
     }
+  }
+
+  public String getScopeFromRawString(String s) {
+    String[] arrOfStr = s.split("::", 5);
+    String[] arr = Arrays.copyOfRange(arrOfStr, 0, arrOfStr.length - 1);
+    return String.join("::", arr);
+  }
+
+  public String[] getScopeValue(String s) {
+    String[] arrOfStr = s.split("::", 5);
+    return ((String) Array.get(arrOfStr, arrOfStr.length - 1)).split("=");
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("Scope: " + this.functionName);
+    sb.append("[ Scope: " + this.scope);
 
     for (Entry<String, Object> entry : this.variablesMap.entrySet()) {
       sb.append(", " + entry.getKey() + ": " + entry.getValue());
     }
 
-    sb.append(", Raw: " + this.rawRange);
-    sb.append(System.getProperty("line.separator"));
+    sb.append(", Raw: " + this.rawRange + " ]");
+    // sb.append(System.getProperty("line.separator"));
     return sb.toString();
   }
 }

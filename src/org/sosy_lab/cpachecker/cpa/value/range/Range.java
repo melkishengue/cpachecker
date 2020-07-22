@@ -36,6 +36,16 @@ public class Range {
     return this.rangeChunks.get(0).isRightOpen();
   }
 
+  public RangeValue startRange() {
+    // TODO: ambiguous in case of union of interval ranges
+    return this.rangeChunks.get(0).getStartRange();
+  }
+
+  public RangeValue endRange() {
+    // TODO: ambiguous in case of union of interval ranges
+    return this.rangeChunks.get(0).getEndRange();
+  }
+
   public Range(String rawRange) {
     String[] arrOfStr = rawRange.split(Pattern.quote("U"), 5);
     for (String a : arrOfStr) {
