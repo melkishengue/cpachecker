@@ -2,7 +2,7 @@
  *  CPAchecker is a tool for configurable software verification.
  *  This file is part of CPAchecker.
  *
- *  Copyright (C) 2007-2020  Dirk Beyer
+ *  Copyright (C) 2007-2020  Melchisedek Hengue Touomo
  *  All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
