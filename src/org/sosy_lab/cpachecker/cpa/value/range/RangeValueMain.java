@@ -33,5 +33,15 @@ public class RangeValueMain {
 
     System.out.println("Start range is: " + range.startRange());
     System.out.println("End range is: " + range.endRange());
+
+    // build a range from range values
+    RangeValue startRange = new RangeValue("null");
+    RangeValue endRange = new RangeValue("main::min::a=1 main::min::b=2");
+
+    RangeValueInterval rvi = new RangeValueInterval(startRange, endRange);
+    System.out.println(rvi);
+
+    System.out.println(rvi.getEndRange().getVariablesMap());
+    System.out.println(rvi.getEndRange().getVariablesMapFullyQualified());
   }
 }

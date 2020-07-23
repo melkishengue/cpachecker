@@ -28,19 +28,32 @@ public class RangeValueInterval {
   RangeValue endRange;
 
   public boolean isLeftOpen() {
-    return this.startRange.isNull();
+    return isLeftOpen;
   }
 
   public boolean isRightOpen() {
-    return this.endRange.isNull();
+    return isRightOpen;
   }
 
   public RangeValue getStartRange() {
     return startRange;
   }
 
+  public void setStartRange(RangeValue pStartRange) {
+    startRange = pStartRange;
+  }
+
   public RangeValue getEndRange() {
     return endRange;
+  }
+
+  public void setEndRange(RangeValue pEndRange) {
+    endRange = pEndRange;
+  }
+
+  public RangeValueInterval() {
+    this.startRange = new RangeValue("null");
+    this.endRange = new RangeValue("null");
   }
 
   public RangeValueInterval(String rawRangeValue) {
@@ -60,6 +73,11 @@ public class RangeValueInterval {
 
     this.startRange = new RangeValue(rawStartRangeValue);
     this.endRange = new RangeValue(rawEndRangeValue);
+  }
+
+  public RangeValueInterval(RangeValue pStartRange, RangeValue pEndRange) {
+    this.startRange = pStartRange;
+    this.endRange = pEndRange;
   }
 
   @Override

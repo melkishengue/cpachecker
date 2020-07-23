@@ -108,7 +108,8 @@ public class RangeValue {
         this.variablesMap.put(variableValuePair[0], variableValuePair[1]);
 
         this.variablesFullyQualified.add(this.scope + "::" + variableValuePair[0]);
-        this.variablesMapFullyQualified.put(this.scope, variableValuePair[1]);
+        this.variablesMapFullyQualified
+            .put(this.scope + "::" + variableValuePair[0], variableValuePair[1]);
       }
     }
   }
