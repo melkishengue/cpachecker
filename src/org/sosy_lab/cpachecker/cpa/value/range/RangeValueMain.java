@@ -28,8 +28,8 @@ public class RangeValueMain {
 
     System.out.println(range);
 
-    System.out.println("The start range is null: " + range.isLeftOpen());
-    System.out.println("The end range is null: " + range.isRightOpen());
+    System.out.println("The start range is null: " + range.isLeftUnbounded());
+    System.out.println("The end range is null: " + range.isRightUnbounded());
 
     System.out.println("Start range is: " + range.startRange());
     System.out.println("End range is: " + range.endRange());

@@ -22,17 +22,15 @@ package org.sosy_lab.cpachecker.cpa.value.range;
 import java.util.regex.Pattern;
 
 public class RangeValueInterval {
-  boolean isLeftOpen;
-  boolean isRightOpen;
   RangeValue startRange;
   RangeValue endRange;
 
-  public boolean isLeftOpen() {
-    return isLeftOpen;
+  public boolean isLeftUnbounded() {
+    return this.getStartRange().isNull;
   }
 
-  public boolean isRightOpen() {
-    return isRightOpen;
+  public boolean isRightUnbounded() {
+    return this.getEndRange().isNull;
   }
 
   public RangeValue getStartRange() {

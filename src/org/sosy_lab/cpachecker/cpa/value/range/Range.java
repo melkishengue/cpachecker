@@ -26,14 +26,14 @@ import java.util.regex.Pattern;
 public class Range {
   List<RangeValueInterval> rangeChunks = new ArrayList<>();
 
-  public boolean isLeftOpen() {
+  public boolean isLeftUnbounded() {
     // TODO: ambiguous in case of union of interval ranges
-    return this.rangeChunks.get(0).isLeftOpen();
+    return this.rangeChunks.get(0).isLeftUnbounded();
   }
 
-  public boolean isRightOpen() {
+  public boolean isRightUnbounded() {
     // TODO: ambiguous in case of union of interval ranges
-    return this.rangeChunks.get(0).isRightOpen();
+    return this.rangeChunks.get(0).isRightUnbounded();
   }
 
   public RangeValue startRange() {
