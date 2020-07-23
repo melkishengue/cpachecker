@@ -101,8 +101,8 @@ public class RangeValue {
 
       String[] arrOfStr = rawRangeNoBraces.split(" ", 5);
       for (String a : arrOfStr) {
-        this.scope = this.getScopeFromRawString(a);
-        String[] variableValuePair = this.getScopeValue(a);
+        this.scope = this.extractScopeFromRawString(a);
+        String[] variableValuePair = this.extractScopeValue(a);
 
         this.variables.add(variableValuePair[0]);
         this.variablesMap.put(variableValuePair[0], variableValuePair[1]);
@@ -114,13 +114,13 @@ public class RangeValue {
     }
   }
 
-  public String getScopeFromRawString(String s) {
+  private String extractScopeFromRawString(String s) {
     String[] arrOfStr = s.split("::", 5);
     String[] arr = Arrays.copyOfRange(arrOfStr, 0, arrOfStr.length - 1);
     return String.join("::", arr);
   }
 
-  public String[] getScopeValue(String s) {
+  private String[] extractScopeValue(String s) {
     String[] arrOfStr = s.split("::", 5);
     return ((String) Array.get(arrOfStr, arrOfStr.length - 1)).split("=");
   }
