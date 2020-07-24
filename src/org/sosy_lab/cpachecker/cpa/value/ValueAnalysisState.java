@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.sosy_lab.common.collect.PathCopyingPersistentTreeMap;
@@ -96,7 +97,7 @@ public final class ValueAnalysisState
   /**
    * object that defines the interval while performing a range symbolic execution analysis
    */
-  private RangeValueInterval rangeValueInterval;
+  private RangeValueInterval rangeValueInterval = new RangeValueInterval();
 
   public void setRangeValueInterval(RangeValueInterval pRangeValueInterval) {
     rangeValueInterval = pRangeValueInterval;
@@ -116,27 +117,24 @@ public final class ValueAnalysisState
 
   private final @Nullable MachineModel machineModel;
 
-  public ValueAnalysisState(MachineModel pMachineModel, RangeValueInterval rangeValueInterval) {
+  public ValueAnalysisState(MachineModel pMachineModel) {
     this(
         checkNotNull(pMachineModel),
-        PathCopyingPersistentTreeMap.of(),
-        rangeValueInterval);
+        PathCopyingPersistentTreeMap.of());
   }
 
-  /*
-   * public ValueAnalysisState( Optional<MachineModel> pMachineModel, PersistentMap<MemoryLocation,
-   * ValueAndType> pConstantsMap) { this(pMachineModel.orElse(null), pConstantsMap);
-   * System.out.println("Second"); }
-   */
+  public ValueAnalysisState(
+      Optional<MachineModel> pMachineModel,
+      PersistentMap<MemoryLocation, ValueAndType> pConstantsMap) {
+    this(pMachineModel.orElse(null), pConstantsMap);
+  }
 
   private ValueAnalysisState(
       @Nullable MachineModel pMachineModel,
-      PersistentMap<MemoryLocation, ValueAndType> pConstantsMap,
-      RangeValueInterval pRangeValueInterval) {
+      PersistentMap<MemoryLocation, ValueAndType> pConstantsMap) {
     machineModel = pMachineModel;
     constantsMap = checkNotNull(pConstantsMap);
     hashCode = constantsMap.hashCode();
-    rangeValueInterval = pRangeValueInterval;
   }
 
   private ValueAnalysisState(ValueAnalysisState state) {
@@ -469,8 +467,8 @@ public final class ValueAnalysisState
     }
 
     sb.append("] size->  ").append(constantsMap.size());
-    sb.append("\n");
     sb.append(this.rangeValueInterval);
+
     return sb.toString();
   }
 

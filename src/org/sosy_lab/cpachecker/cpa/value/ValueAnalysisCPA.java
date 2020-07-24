@@ -282,8 +282,10 @@ public class ValueAnalysisCPA extends AbstractCPA
 
   @Override
   public AbstractState getInitialState(CFANode pNode, StateSpacePartition pPartition) {
+    ValueAnalysisState state = new ValueAnalysisState(cfa.getMachineModel());
     RangeValueInterval rvi = new RangeValueInterval(this.pathrange);
-    ValueAnalysisState state = new ValueAnalysisState(cfa.getMachineModel(), rvi);
+    state.setRangeValueInterval(rvi);
+    System.out.println(state);
     return state;
   }
 
