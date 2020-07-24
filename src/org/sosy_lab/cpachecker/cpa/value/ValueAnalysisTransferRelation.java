@@ -594,6 +594,10 @@ public class ValueAnalysisTransferRelation
         element.setRangeValueInterval(rvi);
       }
 
+      // this is the symbolic value case. We just return the same state. This is called twice for each branch, so both branches are followed
+      // truthvalue == true --> then case of branch {new state(BBthen, τstart, null)}
+      // truthvalue == false --> else case of branch {new state(BBelse, null, τend)}
+
       AssigningValueVisitor avv =
           new AssigningValueVisitor(
               element,
@@ -639,6 +643,9 @@ public class ValueAnalysisTransferRelation
 
       ValueAnalysisState valueAnalysisState = ValueAnalysisState.copyOf(state);
 
+      // this is the boolean case
+      // truthvalue == true --> then case of branch --> not cond is unsatisfiable --> {new state(BBthen, τstart, τend)}
+      // truthvalue == false --> else case of branch --> cond is unsatisfiable --> {new state(BBelse, τstart, τend)}
       RangeValueInterval rvi =
           new RangeValueInterval(
               valueAnalysisState.getRangeValueInterval().getStartRange(),
@@ -652,6 +659,8 @@ public class ValueAnalysisTransferRelation
     } else {
       // assumption not fulfilled
       System.out.println("The condition is not satisfied. Bloc is not visited.");
+
+      // this is the case where the condition is not satisfied, the bloc is not visited at all. Exple a=1, b=2, a<b ? else branch will come here
       return null;
     }
   }
