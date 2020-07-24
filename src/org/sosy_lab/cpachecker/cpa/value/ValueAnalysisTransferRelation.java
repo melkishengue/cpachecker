@@ -585,14 +585,15 @@ public class ValueAnalysisTransferRelation
 
       System.out.println("Symbolic case truthValue: " + truthValue);
 
+      // creates new left and right unbounded interval
       RangeValueInterval rvi = new RangeValueInterval();
       if (truthValue) {
         rvi.setStartRange(state.getRangeValueInterval().getStartRange());
-        element.setRangeValueInterval(rvi);
       } else {
         rvi.setEndRange(state.getRangeValueInterval().getEndRange());
-        element.setRangeValueInterval(rvi);
       }
+
+      element.setRangeValueInterval(rvi);
 
       AssigningValueVisitor avv =
           new AssigningValueVisitor(
