@@ -121,6 +121,7 @@ import org.sosy_lab.cpachecker.cpa.pointer2.util.LocationSet;
 import org.sosy_lab.cpachecker.cpa.rtt.NameProvider;
 import org.sosy_lab.cpachecker.cpa.rtt.RTTState;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisState.ValueAndType;
+import org.sosy_lab.cpachecker.cpa.value.range.RangeValueInterval;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.ConstraintsStrengthenOperator;
 import org.sosy_lab.cpachecker.cpa.value.type.ArrayValue;
 import org.sosy_lab.cpachecker.cpa.value.type.BooleanValue;
@@ -582,6 +583,17 @@ public class ValueAnalysisTransferRelation
     if (!value.isExplicitlyKnown()) {
       ValueAnalysisState element = ValueAnalysisState.copyOf(state);
 
+      System.out.println("Symbolic case truthValue: " + truthValue);
+
+      RangeValueInterval rvi = new RangeValueInterval();
+      if (truthValue) {
+        rvi.setStartRange(state.getRangeValueInterval().getStartRange());
+        element.setRangeValueInterval(rvi);
+      } else {
+        rvi.setEndRange(state.getRangeValueInterval().getEndRange());
+        element.setRangeValueInterval(rvi);
+      }
+
       AssigningValueVisitor avv =
           new AssigningValueVisitor(
               element,
@@ -593,7 +605,7 @@ public class ValueAnalysisTransferRelation
               logger,
               options);
 
-      if (expression instanceof JExpression && ! (expression instanceof CExpression)) {
+      if (expression instanceof JExpression && !(expression instanceof CExpression)) {
 
         ((JExpression) expression).accept(avv);
 
@@ -610,15 +622,36 @@ public class ValueAnalysisTransferRelation
         missingInformationList.add(new MissingInformation(truthValue, expression));
       }
 
-      return element;
+      System.out.println("This is the symbolic case");
 
+      System.out.println(element);
+
+      return element;
     } else if (representsBoolean(value, truthValue)) {
       // we do not know more than before, and the assumption is fulfilled, so return a copy of the old state
       // we need to return a copy, otherwise precision adjustment might reset too much information, even on the original state
-      return ValueAnalysisState.copyOf(state);
 
+      String message =
+          truthValue
+              ? "The condition is true --> if bloc visited"
+              : "The condition is false --> else bloc visited";
+      System.out.println(message);
+
+      ValueAnalysisState valueAnalysisState = ValueAnalysisState.copyOf(state);
+
+      RangeValueInterval rvi =
+          new RangeValueInterval(
+              valueAnalysisState.getRangeValueInterval().getStartRange(),
+              valueAnalysisState.getRangeValueInterval().getEndRange());
+
+      valueAnalysisState.setRangeValueInterval(rvi);
+
+      System.out.println(valueAnalysisState);
+
+      return valueAnalysisState;
     } else {
       // assumption not fulfilled
+      System.out.println("The condition is not satisfied. Bloc is not visited.");
       return null;
     }
   }

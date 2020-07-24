@@ -36,7 +36,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.sosy_lab.common.collect.PathCopyingPersistentTreeMap;
@@ -54,6 +53,8 @@ import org.sosy_lab.cpachecker.core.interfaces.AbstractQueryableState;
 import org.sosy_lab.cpachecker.core.interfaces.FormulaReportingState;
 import org.sosy_lab.cpachecker.core.interfaces.Graphable;
 import org.sosy_lab.cpachecker.core.interfaces.PseudoPartitionable;
+import org.sosy_lab.cpachecker.core.interfaces.RangeReportingState;
+import org.sosy_lab.cpachecker.cpa.value.range.RangeValueInterval;
 import org.sosy_lab.cpachecker.cpa.value.refiner.ValueAnalysisInterpolant;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.type.ConstantSymbolicExpression;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.type.SymbolicIdentifier;
@@ -77,7 +78,7 @@ import org.sosy_lab.java_smt.api.FormulaType.FloatingPointType;
 public final class ValueAnalysisState
     implements AbstractQueryableState, FormulaReportingState,
         ForgetfulState<ValueAnalysisInformation>, Serializable, Graphable,
-        LatticeAbstractState<ValueAnalysisState>, PseudoPartitionable {
+        LatticeAbstractState<ValueAnalysisState>, PseudoPartitionable, RangeReportingState {
 
   private static final long serialVersionUID = -3152134511524554358L;
 
@@ -93,6 +94,19 @@ public final class ValueAnalysisState
   private PersistentMap<MemoryLocation, ValueAndType> constantsMap;
 
   /**
+   * object that defines the interval while performing a range symbolic execution analysis
+   */
+  private RangeValueInterval rangeValueInterval;
+
+  public void setRangeValueInterval(RangeValueInterval pRangeValueInterval) {
+    rangeValueInterval = pRangeValueInterval;
+  }
+
+  public RangeValueInterval getRangeValueInterval() {
+    return rangeValueInterval;
+  }
+
+  /**
    * hashCode needs to be updated with every change of {@link #constantsMap}.
    *
    * @see java.util.Map#hashCode()
@@ -102,30 +116,34 @@ public final class ValueAnalysisState
 
   private final @Nullable MachineModel machineModel;
 
-  public ValueAnalysisState(MachineModel pMachineModel) {
+  public ValueAnalysisState(MachineModel pMachineModel, RangeValueInterval rangeValueInterval) {
     this(
         checkNotNull(pMachineModel),
-        PathCopyingPersistentTreeMap.of());
+        PathCopyingPersistentTreeMap.of(),
+        rangeValueInterval);
   }
 
-  public ValueAnalysisState(
-      Optional<MachineModel> pMachineModel,
-      PersistentMap<MemoryLocation, ValueAndType> pConstantsMap) {
-    this(pMachineModel.orElse(null), pConstantsMap);
-  }
+  /*
+   * public ValueAnalysisState( Optional<MachineModel> pMachineModel, PersistentMap<MemoryLocation,
+   * ValueAndType> pConstantsMap) { this(pMachineModel.orElse(null), pConstantsMap);
+   * System.out.println("Second"); }
+   */
 
   private ValueAnalysisState(
       @Nullable MachineModel pMachineModel,
-      PersistentMap<MemoryLocation, ValueAndType> pConstantsMap) {
+      PersistentMap<MemoryLocation, ValueAndType> pConstantsMap,
+      RangeValueInterval pRangeValueInterval) {
     machineModel = pMachineModel;
     constantsMap = checkNotNull(pConstantsMap);
     hashCode = constantsMap.hashCode();
+    rangeValueInterval = pRangeValueInterval;
   }
 
   private ValueAnalysisState(ValueAnalysisState state) {
     machineModel = state.machineModel;
     constantsMap = checkNotNull(state.constantsMap);
     hashCode = state.hashCode;
+    rangeValueInterval = state.rangeValueInterval;
     assert hashCode == constantsMap.hashCode();
   }
 
@@ -449,6 +467,8 @@ public final class ValueAnalysisState
       sb.append(entry.getValue().getValue());
       sb.append(">\n");
     }
+
+    sb.append(this.rangeValueInterval);
 
     return sb.append("] size->  ").append(constantsMap.size()).toString();
   }

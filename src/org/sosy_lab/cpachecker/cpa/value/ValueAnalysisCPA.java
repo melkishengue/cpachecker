@@ -68,6 +68,7 @@ import org.sosy_lab.cpachecker.cpa.arg.path.ARGPath;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisPrecisionAdjustment.PrecAdjustmentOptions;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisPrecisionAdjustment.PrecAdjustmentStatistics;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisTransferRelation.ValueTransferOptions;
+import org.sosy_lab.cpachecker.cpa.value.range.RangeValueInterval;
 import org.sosy_lab.cpachecker.cpa.value.refiner.ValueAnalysisConcreteErrorPathAllocator;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.ConstraintsStrengthenOperator;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.SymbolicValueAnalysisPrecisionAdjustment;
@@ -118,6 +119,12 @@ public class ValueAnalysisCPA extends AbstractCPA
       description = "Tells the value analysis how to handle unknown values.")
   private UnknownValueStrategy unknownValueStrategy = UnknownValueStrategy.DISCARD;
 
+  @Option(
+    secure = true,
+    name = "pathrange",
+    description = "Defines the initial path range while performing a symbloic execution within a path range.")
+  private String pathrange = "(null, null)";
+
   public static CPAFactory factory() {
     return AutomaticCPAFactory.forType(ValueAnalysisCPA.class);
   }
@@ -164,6 +171,8 @@ public class ValueAnalysisCPA extends AbstractCPA
     transferOptions = new ValueTransferOptions(config);
     precisionAdjustmentOptions = new PrecAdjustmentOptions(config, cfa);
     precisionAdjustmentStatistics = new PrecAdjustmentStatistics();
+
+    System.out.println("Initial path range is " + this.pathrange);
   }
 
   private MemoryLocationValueHandler createUnknownValueHandler()
@@ -273,7 +282,9 @@ public class ValueAnalysisCPA extends AbstractCPA
 
   @Override
   public AbstractState getInitialState(CFANode pNode, StateSpacePartition pPartition) {
-    return new ValueAnalysisState(cfa.getMachineModel());
+    RangeValueInterval rvi = new RangeValueInterval(this.pathrange);
+    ValueAnalysisState state = new ValueAnalysisState(cfa.getMachineModel(), rvi);
+    return state;
   }
 
   @Override
