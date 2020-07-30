@@ -570,6 +570,8 @@ public class ValueAnalysisTransferRelation
     expression = simplifiedExpression.getFirst();
     truthValue = simplifiedExpression.getSecond();
 
+    System.out.println(expression);
+
     final ExpressionValueVisitor evv = getVisitor();
     final Type booleanType = getBooleanType(expression);
 
@@ -586,6 +588,8 @@ public class ValueAnalysisTransferRelation
       System.out.println("Symbolic case truthValue: " + truthValue);
 
       // creates new left and right unbounded interval
+      // truthvalue == true --> then case of branch {new state(BBthen, τstart, null)}
+      // truthvalue == false --> else case of branch {new state(BBelse, null, τend)}
       RangeValueInterval rvi = new RangeValueInterval();
       if (truthValue) {
         rvi.setStartRange(state.getRangeValueInterval().getStartRange());
@@ -595,8 +599,6 @@ public class ValueAnalysisTransferRelation
 
       element.setRangeValueInterval(rvi);
       // this is the symbolic value case. We just return the same state. This is called twice for each branch, so both branches are followed
-      // truthvalue == true --> then case of branch {new state(BBthen, τstart, null)}
-      // truthvalue == false --> else case of branch {new state(BBelse, null, τend)}
 
       AssigningValueVisitor avv =
           new AssigningValueVisitor(
