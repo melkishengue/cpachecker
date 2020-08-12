@@ -68,6 +68,7 @@ import org.sosy_lab.cpachecker.cpa.arg.path.ARGPath;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisPrecisionAdjustment.PrecAdjustmentOptions;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisPrecisionAdjustment.PrecAdjustmentStatistics;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisTransferRelation.ValueTransferOptions;
+import org.sosy_lab.cpachecker.cpa.value.range.RangeValueInterval;
 import org.sosy_lab.cpachecker.cpa.value.refiner.ValueAnalysisConcreteErrorPathAllocator;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.ConstraintsStrengthenOperator;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.SymbolicValueAnalysisPrecisionAdjustment;
@@ -117,6 +118,18 @@ public class ValueAnalysisCPA extends AbstractCPA
       name = "unknownValueHandling",
       description = "Tells the value analysis how to handle unknown values.")
   private UnknownValueStrategy unknownValueStrategy = UnknownValueStrategy.DISCARD;
+
+  @Option(
+    secure = true,
+    name = "pathrange",
+    description = "Defines the initial path range while performing a symbloic execution within a path range.")
+  private String pathrange = "(null, null)";
+
+  @Option(
+    secure = true,
+    name = "performRse",
+    description = "Defines whether ranged symbolic execution should be performed.")
+  private boolean performRse = false;
 
   public static CPAFactory factory() {
     return AutomaticCPAFactory.forType(ValueAnalysisCPA.class);
@@ -262,6 +275,16 @@ public class ValueAnalysisCPA extends AbstractCPA
 
   @Override
   public ValueAnalysisTransferRelation getTransferRelation() {
+    if (performRse) {
+      return new ValueAnalysisRangedTransferRelation(
+          logger,
+          cfa,
+          transferOptions,
+          unknownValueHandler,
+          constraintsStrengthenOperator,
+          statistics);
+    }
+
     return new ValueAnalysisTransferRelation(
         logger,
         cfa,
@@ -273,7 +296,10 @@ public class ValueAnalysisCPA extends AbstractCPA
 
   @Override
   public AbstractState getInitialState(CFANode pNode, StateSpacePartition pPartition) {
-    return new ValueAnalysisState(cfa.getMachineModel());
+    ValueAnalysisState state = new ValueAnalysisState(cfa.getMachineModel());
+    RangeValueInterval interval = new RangeValueInterval(pathrange);
+    state.setRangeValueInterval(interval);
+    return state;
   }
 
   @Override

@@ -197,14 +197,14 @@ public class ValueAnalysisTransferRelation
     }
   }
 
-  private final ValueTransferOptions options;
-  private final @Nullable ValueAnalysisCPAStatistics stats;
+  protected final ValueTransferOptions options;
+  protected final @Nullable ValueAnalysisCPAStatistics stats;
 
   private final ConstraintsStrengthenOperator constraintsStrengthenOperator;
 
   private final Set<String> javaNonStaticVariables = new HashSet<>();
 
-  private JRightHandSide missingInformationRightJExpression = null;
+  protected JRightHandSide missingInformationRightJExpression = null;
   private String missingInformationLeftJVariable = null;
 
   private boolean missingFieldVariableObject;
@@ -214,7 +214,7 @@ public class ValueAnalysisTransferRelation
   private JIdExpression notScopedField;
   private Value notScopedFieldValue;
 
-  private boolean missingAssumeInformation;
+  protected boolean missingAssumeInformation;
 
   /**
    * This class assigns symbolic values, if they are enabled.
@@ -227,7 +227,7 @@ public class ValueAnalysisTransferRelation
    * Information needed from other cpas.
    * (at the moment specifically SMG)
    */
-  private List<MissingInformation> missingInformationList;
+  protected List<MissingInformation> missingInformationList;
 
   /**
    * Save the old State for strengthen.
@@ -235,10 +235,10 @@ public class ValueAnalysisTransferRelation
    */
   private ValueAnalysisState oldState;
 
-  private final MachineModel machineModel;
-  private final LogManagerWithoutDuplicates logger;
-  private final Collection<String> addressedVariables;
-  private final Collection<String> booleanVariables;
+  protected final MachineModel machineModel;
+  protected final LogManagerWithoutDuplicates logger;
+  protected final Collection<String> addressedVariables;
+  protected final Collection<String> booleanVariables;
 
   public ValueAnalysisTransferRelation(
       LogManager pLogger,
@@ -558,7 +558,7 @@ public class ValueAnalysisTransferRelation
     return handleAssumption(expression, truthValue);
   }
 
-  private ValueAnalysisState handleAssumption(AExpression expression, boolean truthValue)
+  protected ValueAnalysisState handleAssumption(AExpression expression, boolean truthValue)
       throws UnrecognizedCodeException {
 
     if (stats != null) {
@@ -623,7 +623,7 @@ public class ValueAnalysisTransferRelation
     }
   }
 
-  private Type getBooleanType(AExpression pExpression) {
+  protected Type getBooleanType(AExpression pExpression) {
     if (pExpression instanceof JExpression) {
       return JSimpleType.getBoolean();
     } else if (pExpression instanceof CExpression) {
@@ -647,7 +647,7 @@ public class ValueAnalysisTransferRelation
    *    * representsTrue(NullValue.getInstance(), false)    = false
    *
    */
-  private boolean representsBoolean(Value value, boolean bool) {
+  protected boolean representsBoolean(Value value, boolean bool) {
     if (value instanceof BooleanValue) {
       return ((BooleanValue) value).isTrue() == bool;
 
@@ -772,7 +772,8 @@ public class ValueAnalysisTransferRelation
         || pType instanceof JArrayType;
   }
 
-  private boolean isMissingCExpressionInformation(ExpressionValueVisitor pEvv,
+  protected boolean
+      isMissingCExpressionInformation(ExpressionValueVisitor pEvv,
       ARightHandSide pExp) {
 
     return pExp instanceof CExpression && pEvv.hasMissingPointer();
@@ -1218,7 +1219,8 @@ public class ValueAnalysisTransferRelation
     }
   }
 
-  private Value getExpressionValue(
+  protected Value
+      getExpressionValue(
       AExpression expression, final Type type, ExpressionValueVisitor evv)
       throws UnrecognizedCodeException {
     if (!isTrackedType(type)) {
@@ -1650,7 +1652,7 @@ public class ValueAnalysisTransferRelation
   }
 
   /** returns an initialized, empty visitor */
-  private ExpressionValueVisitor getVisitor(ValueAnalysisState pState, String pFunctionName) {
+  protected ExpressionValueVisitor getVisitor(ValueAnalysisState pState, String pFunctionName) {
     if (options.isIgnoreFunctionValue()) {
       return new ExpressionValueVisitor(pState, pFunctionName, machineModel, logger);
     } else {
@@ -1658,7 +1660,7 @@ public class ValueAnalysisTransferRelation
     }
   }
 
-  private ExpressionValueVisitor getVisitor() {
+  protected ExpressionValueVisitor getVisitor() {
     return getVisitor(state, functionName);
   }
 }

@@ -54,6 +54,7 @@ import org.sosy_lab.cpachecker.core.interfaces.AbstractQueryableState;
 import org.sosy_lab.cpachecker.core.interfaces.FormulaReportingState;
 import org.sosy_lab.cpachecker.core.interfaces.Graphable;
 import org.sosy_lab.cpachecker.core.interfaces.PseudoPartitionable;
+import org.sosy_lab.cpachecker.cpa.value.range.RangeValueInterval;
 import org.sosy_lab.cpachecker.cpa.value.refiner.ValueAnalysisInterpolant;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.type.ConstantSymbolicExpression;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.type.SymbolicIdentifier;
@@ -93,6 +94,19 @@ public final class ValueAnalysisState
   private PersistentMap<MemoryLocation, ValueAndType> constantsMap;
 
   /**
+   * object that defines the interval while performing a range symbolic execution analysis
+   */
+  private RangeValueInterval rangeValueInterval = new RangeValueInterval();
+
+  public void setRangeValueInterval(RangeValueInterval pRangeValueInterval) {
+    rangeValueInterval = pRangeValueInterval;
+  }
+
+  public RangeValueInterval getRangeValueInterval() {
+    return rangeValueInterval;
+  }
+
+  /**
    * hashCode needs to be updated with every change of {@link #constantsMap}.
    *
    * @see java.util.Map#hashCode()
@@ -126,6 +140,7 @@ public final class ValueAnalysisState
     machineModel = state.machineModel;
     constantsMap = checkNotNull(state.constantsMap);
     hashCode = state.hashCode;
+    rangeValueInterval = state.rangeValueInterval;
     assert hashCode == constantsMap.hashCode();
   }
 
@@ -450,6 +465,7 @@ public final class ValueAnalysisState
       sb.append(">\n");
     }
 
+    sb.append(this.rangeValueInterval);
     return sb.append("] size->  ").append(constantsMap.size()).toString();
   }
 
