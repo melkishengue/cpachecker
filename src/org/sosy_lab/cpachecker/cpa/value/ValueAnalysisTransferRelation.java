@@ -694,7 +694,7 @@ public class ValueAnalysisTransferRelation
 
       String message =
           truthValue ? "Symbolic: Then case returning..." : "Symbolic: Else case returnning...";
-      System.out.println(message);
+      System.out.println(message + element);
 
       return element;
     } else if (representsBoolean(value, truthValue)) {

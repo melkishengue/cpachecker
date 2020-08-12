@@ -22,4 +22,4 @@
 
 # scripts/cpa.sh -statement doc/examples/initial_program.c
 
-scripts/cpa.sh -config config/components/valueAnalysis-generate-cmc-condition.properties -spec config/properties/unreach-call.prp doc/examples/min.c
+clear && clear && scripts/cpa.sh -config config/components/valueAnalysis-generate-cmc-condition.properties -spec config/properties/unreach-call.prp doc/examples/gcd.c
