@@ -30,9 +30,11 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -121,6 +123,7 @@ import org.sosy_lab.cpachecker.cpa.pointer2.util.LocationSet;
 import org.sosy_lab.cpachecker.cpa.rtt.NameProvider;
 import org.sosy_lab.cpachecker.cpa.rtt.RTTState;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisState.ValueAndType;
+import org.sosy_lab.cpachecker.cpa.value.range.RangeValue;
 import org.sosy_lab.cpachecker.cpa.value.range.RangeValueInterval;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.ConstraintsStrengthenOperator;
 import org.sosy_lab.cpachecker.cpa.value.type.ArrayValue;
@@ -569,11 +572,12 @@ public class ValueAnalysisTransferRelation
     Pair<AExpression, Boolean> simplifiedExpression = simplifyAssumption(expression, truthValue);
     expression = simplifiedExpression.getFirst();
     truthValue = simplifiedExpression.getSecond();
-
-    System.out.println(expression);
-
     final ExpressionValueVisitor evv = getVisitor();
     final Type booleanType = getBooleanType(expression);
+
+    RangeValueInterval rvi1 = state.getRangeValueInterval();
+    RangeValue startRangeValue = rvi1.getStartRange();
+    RangeValue endRangeValue = rvi1.getEndRange();
 
     // get the value of the expression (either true[1L], false[0L], or unknown[null])
     Value value = getExpressionValue(expression, booleanType, evv);
@@ -585,20 +589,80 @@ public class ValueAnalysisTransferRelation
     if (!value.isExplicitlyKnown()) {
       ValueAnalysisState element = ValueAnalysisState.copyOf(state);
 
-      System.out.println("Symbolic case truthValue: " + truthValue);
-
       // creates new left and right unbounded interval
       // truthvalue == true --> then case of branch {new state(BBthen, τstart, null)}
       // truthvalue == false --> else case of branch {new state(BBelse, null, τend)}
+
+      Boolean intervalStartImpliesValue = false;
+      Boolean intervalEndImpliesValue = false;
+
+      System.out.println("Interval " + state.getRangeValueInterval());
+
+      if (!startRangeValue.isNull()) {
+        HashMap<String, Object> variables = startRangeValue.getVariablesMapFullyQualified();
+        ValueAnalysisState duplicate1 = ValueAnalysisState.copyOf(state);
+        ExpressionValueVisitor evv1 = getVisitor(duplicate1);
+
+        for (Entry<String, Object> entry : variables.entrySet()) {
+          duplicate1.assignConstant(
+              entry.getKey(),
+              new NumericValue(Integer.parseInt((String) entry.getValue())));
+        }
+
+        intervalStartImpliesValue =
+            representsBoolean(getExpressionValue(expression, booleanType, evv1), false);
+      }
+
+      if (!endRangeValue.isNull()) {
+        HashMap<String, Object> variables = endRangeValue.getVariablesMapFullyQualified();
+        ValueAnalysisState duplicate2 = ValueAnalysisState.copyOf(state);
+        ExpressionValueVisitor evv2 = getVisitor(duplicate2);
+
+        for (Entry<String, Object> entry : variables.entrySet()) {
+          duplicate2.assignConstant(
+              entry.getKey(),
+              new NumericValue(Integer.parseInt((String) entry.getValue())));
+        }
+
+        intervalEndImpliesValue =
+            representsBoolean(getExpressionValue(expression, booleanType, evv2), true);
+      }
+
+      System.out.println(
+          expression
+              + " Value: "
+              + truthValue
+              + ", intervalStartImpliesValue="
+              + intervalStartImpliesValue
+              + " and intervalEndImpliesValue="
+              + intervalEndImpliesValue);
+
+      if (intervalStartImpliesValue) {
+        if (!truthValue) {
+          System.out.println("Else case returning...");
+          return element;
+        }
+
+        return null;
+      }
+
+      if (intervalEndImpliesValue) {
+        if (truthValue) {
+          System.out.println("Then case returning...");
+          return element;
+        }
+
+        return null;
+      }
+
       RangeValueInterval rvi = new RangeValueInterval();
       if (truthValue) {
-        rvi.setStartRange(state.getRangeValueInterval().getStartRange());
+        rvi.setStartRange(element.getRangeValueInterval().getStartRange());
       } else {
-        rvi.setEndRange(state.getRangeValueInterval().getEndRange());
+        rvi.setEndRange(element.getRangeValueInterval().getEndRange());
       }
 
       element.setRangeValueInterval(rvi);
-      // this is the symbolic value case. We just return the same state. This is called twice for each branch, so both branches are followed
 
       AssigningValueVisitor avv =
           new AssigningValueVisitor(
@@ -628,9 +692,9 @@ public class ValueAnalysisTransferRelation
         missingInformationList.add(new MissingInformation(truthValue, expression));
       }
 
-      System.out.println("This is the symbolic case");
-
-      System.out.println(element);
+      String message =
+          truthValue ? "Symbolic: Then case returning..." : "Symbolic: Else case returnning...";
+      System.out.println(message);
 
       return element;
     } else if (representsBoolean(value, truthValue)) {
@@ -654,9 +718,6 @@ public class ValueAnalysisTransferRelation
               valueAnalysisState.getRangeValueInterval().getEndRange());
 
       valueAnalysisState.setRangeValueInterval(rvi);
-
-      System.out.println(valueAnalysisState);
-
       return valueAnalysisState;
     } else {
       // assumption not fulfilled
@@ -1705,4 +1766,9 @@ public class ValueAnalysisTransferRelation
   private ExpressionValueVisitor getVisitor() {
     return getVisitor(state, functionName);
   }
+
+  private ExpressionValueVisitor getVisitor(ValueAnalysisState pState) {
+    return getVisitor(pState, functionName);
+  }
+
 }

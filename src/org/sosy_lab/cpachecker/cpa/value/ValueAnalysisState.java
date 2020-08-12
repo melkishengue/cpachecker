@@ -99,10 +99,12 @@ public final class ValueAnalysisState
    */
   private RangeValueInterval rangeValueInterval = new RangeValueInterval();
 
+  @Override
   public void setRangeValueInterval(RangeValueInterval pRangeValueInterval) {
     rangeValueInterval = pRangeValueInterval;
   }
 
+  @Override
   public RangeValueInterval getRangeValueInterval() {
     return rangeValueInterval;
   }
@@ -156,7 +158,9 @@ public final class ValueAnalysisState
    * @param value value to be assigned.
    */
   void assignConstant(String variableName, Value value) {
-    addToConstantsMap(MemoryLocation.valueOf(variableName), value, null);
+    MemoryLocation mem = MemoryLocation.valueOf(variableName);
+
+    addToConstantsMap(mem, value, null);
   }
 
   private void addToConstantsMap(

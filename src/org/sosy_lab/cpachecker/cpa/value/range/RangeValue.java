@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
 
 public class RangeValue {
   List<String> variables = new ArrayList<>();
@@ -128,11 +127,12 @@ public class RangeValue {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("[ Scope: " + this.scope);
+    // sb.append("[ Scope: " + this.scope);
 
-    for (Entry<String, Object> entry : this.variablesMap.entrySet()) {
-      sb.append(", " + entry.getKey() + ": " + entry.getValue());
-    }
+    /*
+     * for (Entry<String, Object> entry : this.variablesMap.entrySet()) { sb.append(", " +
+     * entry.getKey() + ": " + entry.getValue()); }
+     */
 
     sb.append(", Raw: " + this.rawRange + " ]");
     // sb.append(System.getProperty("line.separator"));

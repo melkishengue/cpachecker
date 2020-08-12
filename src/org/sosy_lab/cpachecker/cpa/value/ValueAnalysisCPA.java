@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +47,7 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.LogManager;
 import org.sosy_lab.cpachecker.cfa.CFA;
 import org.sosy_lab.cpachecker.cfa.model.CFANode;
+import org.sosy_lab.cpachecker.core.algorithm.bmc.ProverEnvironmentWithFallback;
 import org.sosy_lab.cpachecker.core.counterexample.ConcreteStatePath;
 import org.sosy_lab.cpachecker.core.defaults.AbstractCPA;
 import org.sosy_lab.cpachecker.core.defaults.AutomaticCPAFactory;
@@ -76,8 +78,16 @@ import org.sosy_lab.cpachecker.cpa.value.symbolic.SymbolicValueAnalysisPrecision
 import org.sosy_lab.cpachecker.cpa.value.symbolic.SymbolicValueAssigner;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.type.SymbolicValue;
 import org.sosy_lab.cpachecker.util.StateToFormulaWriter;
+import org.sosy_lab.cpachecker.util.predicates.smt.BooleanFormulaManagerView;
+import org.sosy_lab.cpachecker.util.predicates.smt.FormulaManagerView;
+import org.sosy_lab.cpachecker.util.predicates.smt.Solver;
 import org.sosy_lab.cpachecker.util.states.MemoryLocation;
 import org.sosy_lab.cpachecker.util.states.MemoryLocationValueHandler;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.NumeralFormula;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
+import org.sosy_lab.java_smt.api.SolverException;
 
 @Options(prefix = "cpa.value")
 public class ValueAnalysisCPA extends AbstractCPA
@@ -150,7 +160,9 @@ public class ValueAnalysisCPA extends AbstractCPA
   private SymbolicStatistics symbolicStats;
 
   private ValueAnalysisCPA(Configuration config, LogManager logger,
-      ShutdownNotifier pShutdownNotifier, CFA cfa) throws InvalidConfigurationException {
+      ShutdownNotifier pShutdownNotifier,
+      CFA cfa)
+      throws InvalidConfigurationException {
     super(DelegateAbstractDomain.<ValueAnalysisState>getInstance(), null);
     this.config           = config;
     this.logger           = logger;
@@ -172,7 +184,38 @@ public class ValueAnalysisCPA extends AbstractCPA
     precisionAdjustmentOptions = new PrecAdjustmentOptions(config, cfa);
     precisionAdjustmentStatistics = new PrecAdjustmentStatistics();
 
-    System.out.println("Initial path range is " + this.pathrange);
+    Solver solver = Solver.create(config, logger, shutdownNotifier);
+    FormulaManagerView formulaManager = solver.getFormulaManager();
+    IntegerFormulaManager nfmgr = formulaManager.getIntegerFormulaManager();
+    BooleanFormulaManagerView bfmgr = solver.getFormulaManager().getBooleanFormulaManager();
+    NumeralFormula var = nfmgr.makeVariable("x");
+    List<BooleanFormula> result = new ArrayList<>();
+    result.add(formulaManager.makeLessOrEqual(nfmgr.makeNumber(1), var, true));
+    result.add(formulaManager.makeGreaterOrEqual(nfmgr.makeNumber(5), var, true));
+    BooleanFormula bf = bfmgr.and(result);
+
+    try {
+      ProverEnvironmentWithFallback prover =
+          new ProverEnvironmentWithFallback(solver, ProverOptions.GENERATE_MODELS);
+
+      prover.addConstraint(bf);
+
+      System.out
+          .println(
+              "Boolean formula: "
+                  + result
+                  + ". Result:"
+                  + prover.isUnsat()
+                  + " "
+                  + prover.getModelAssignments());
+    } catch (SolverException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    } catch (InterruptedException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    solver.close();
   }
 
   private MemoryLocationValueHandler createUnknownValueHandler()
@@ -285,7 +328,6 @@ public class ValueAnalysisCPA extends AbstractCPA
     ValueAnalysisState state = new ValueAnalysisState(cfa.getMachineModel());
     RangeValueInterval rvi = new RangeValueInterval(this.pathrange);
     state.setRangeValueInterval(rvi);
-    System.out.println(state);
     return state;
   }
 
