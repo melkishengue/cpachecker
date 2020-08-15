@@ -258,6 +258,7 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
         BooleanFormula edgeFormula = pf.getFormula();
 
         for (int lIndex = lFlagIndex + 1; lIndex <= lNondetIndex; lIndex++) {
+
           Formula nondetVar = fmgr.makeVariable(NONDET_FORMULA_TYPE, NONDET_FLAG_VARIABLE, lIndex);
           BooleanFormula lAssignment = fmgr.assignment(nondetVar, fmgr.makeNumber(NONDET_FORMULA_TYPE, 1));
           edgeFormula = bfmgr.and(edgeFormula, lAssignment);
@@ -498,6 +499,7 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
         PathFormula pf = parentFormulasOnPath.get(key);
 
         if(pf == null) {
+          System.out.println("this thing is null !!");
           // create formula by edge, be sure to use the correct SSA indices!
           // TODO the class PathFormulaManagerImpl should not depend on PredicateAbstractState,
           // it is used without PredicateCPA as well.
@@ -507,6 +509,7 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
             return bfmgr.makeTrue();
           } else {
             pf = pe.getPathFormula();
+            System.out.println("pf = " + pf);
           }
           pf = this.makeEmptyPathFormula(pf); // reset everything except SSAMap
           pf = this.makeAnd(pf, positiveEdge);        // conjunct with edge

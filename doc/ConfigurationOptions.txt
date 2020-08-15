@@ -2677,6 +2677,11 @@ cpa.smg.verifyPredicates = false
 # Allocation functions which set memory to zero
 cpa.smg.zeroingMemoryAllocation = {"calloc", "kzalloc"}
 
+# With this option enabled, function calls that occur in the CFA are
+# followed. By disabling this option one can traverse a function without
+# following function calls (in this case FunctionSummaryEdges are used)
+cpa.statement.followFunctionCalls = true
+
 # set this to true when you only want to do a code analysis. If StatisticsCPA
 # is combined with other CPAs to do queries use false.
 cpa.statistics.analysis = true
@@ -2951,6 +2956,13 @@ cpa.value.merge = "SEP"
 # Assume that variables used only in a boolean context are either zero or
 # one.
 cpa.value.optimizeBooleanVariables = true
+
+# Defines the initial path range while performing a symbloic execution within
+# a path range.
+cpa.value.pathrange = "(null, null)"
+
+# Defines whether ranged symbolic execution should be performed.
+cpa.value.performRse = false
 
 # target file to hold the exported precision
 cpa.value.precisionFile = no default value
