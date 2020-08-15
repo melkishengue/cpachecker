@@ -192,6 +192,12 @@ public class CachingPathFormulaManager implements PathFormulaManager {
   }
 
   @Override
+  public BooleanFormula buildBranchingFormulaSinglePath(Set<ARGState> pElementsOnPath)
+      throws CPATransferException, InterruptedException {
+    return delegate.buildBranchingFormulaSinglePath(pElementsOnPath);
+  }
+
+  @Override
   public BooleanFormula buildBranchingFormula(Set<ARGState> pElementsOnPath,
       Map<Pair<ARGState, CFAEdge>, PathFormula> pParentFormulasOnPath)
       throws CPATransferException, InterruptedException {

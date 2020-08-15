@@ -6,10 +6,12 @@ int gcd(int a, int b) {
         	a = a - b;
         }
         else {
-        	ERROR: __VERIFIER_error();
         	b = b - a;
+        	
         }
     }
+
+    ERROR: __VERIFIER_error();
 
     return a;
 }

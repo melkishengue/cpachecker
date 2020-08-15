@@ -26,6 +26,7 @@ package org.sosy_lab.cpachecker.core.algorithm.generatePathrange;
 import static com.google.common.collect.FluentIterable.from;
 import static org.sosy_lab.common.collect.Collections3.transformedImmutableListCopy;
 import static org.sosy_lab.cpachecker.core.algorithm.bmc.BMCHelper.filterAncestors;
+import static org.sosy_lab.cpachecker.cpa.arg.ARGUtils.getAllStatesOnPathsTo;
 import static org.sosy_lab.cpachecker.util.AbstractStates.IS_TARGET_STATE;
 import static org.sosy_lab.cpachecker.util.statistics.StatisticsUtils.toPercent;
 
@@ -211,50 +212,48 @@ public class GeneratePathrangeAlgorithm
   @Override
   public AlgorithmStatus run(ReachedSet reached) throws CPAException, InterruptedException {
     AlgorithmStatus status = AlgorithmStatus.SOUND_AND_PRECISE;
-    status = status.update(algorithm.run(reached));
-    assert ARGUtils.checkARG(reached);
 
-    final List<ARGState> errorStates =
-        from(reached)
-            .transform(AbstractStates.toState(ARGState.class))
-            .filter(AbstractStates.IS_TARGET_STATE)
-            .filter(Predicates.not(Predicates.in(checkedTargetStates)))
-            .toList();
+      status = status.update(algorithm.run(reached));
+      assert ARGUtils.checkARG(reached);
 
-    if(errorStates.size() == 0) {
-      return status;
-    }
+      final List<ARGState> errorStates =
+          from(reached)
+              .transform(AbstractStates.toState(ARGState.class))
+              .filter(AbstractStates.IS_TARGET_STATE)
+              .filter(Predicates.not(Predicates.in(checkedTargetStates)))
+              .toList();
 
-    ValueAnalysisState vaState = AbstractStates.extractStateByType(errorStates.get(0), ValueAnalysisState.class);
-    System.out.println("vaState = " + vaState);
-
-
-    System.out.println("errorStates = " + errorStates);
-
-    // check counterexample
-    checkTime.start();
-    try {
-      List<ValueAssignment> model = constructModelAssignment(reached);
-      System.out.println("model = " + model);
-
-      ArrayList rangeChunksList = new ArrayList<String>();
-      for(ValueAssignment va : model) {
-        System.out.println(va.getName() + " has value: " + va.getValue());
-        String[] arr = va.getName().split("@", 2);
-        if (arr.length > 1) {
-          String varName = arr[0];
-          System.out.println("We have found a real variable " + varName);
-          rangeChunksList.add(varName + "=" + va.getValue());
-        }
+      if(errorStates.size() == 0) {
+        return status;
       }
 
-      String range = String.join(" ", rangeChunksList);
-      range = "[(" + range + "), null]";
-      System.out.println("range: " + range);
-      saveRangeToFile(range);
-    } finally {
-      checkTime.stop();
-    }
+      ValueAnalysisState vaState = AbstractStates.extractStateByType(errorStates.get(0), ValueAnalysisState.class);
+
+      // check counterexample
+      checkTime.start();
+      try {
+        List<ValueAssignment> model = constructModelAssignment(reached);
+
+        ArrayList rangeChunksList = new ArrayList<String>();
+        for(ValueAssignment va : model) {
+          String[] arr = va.getName().split("@", 2);
+          if (arr.length > 1) {
+            String varName = arr[0];
+            rangeChunksList.add(varName + "=" + va.getValue());
+          }
+        }
+
+        String range = "null";
+        if ((rangeChunksList.size() > 0)) {
+          range = String.join(" ", rangeChunksList);
+        }
+        range = "[(" + range + "), null]";
+        System.out.println("range: " + range);
+        saveRangeToFile(range);
+      } finally {
+        checkTime.stop();
+      }
+
     return status;
   }
 
@@ -295,8 +294,6 @@ public class GeneratePathrangeAlgorithm
     pReachedSet.removeAll(redundantStates);
     targetStates = Sets.difference(targetStates, redundantStates);
 
-    System.out.println("targetStates = " + targetStates);
-
       final boolean shouldCheckBranching;
       if (targetStates.size() == 1) {
         ARGState state = Iterables.getOnlyElement(targetStates);
@@ -311,14 +308,15 @@ public class GeneratePathrangeAlgorithm
       }
 
       if (shouldCheckBranching) {
-        Set<ARGState> arg = from(pReachedSet).filter(ARGState.class).toSet();
-
-        System.out.println("arg.size() = " + arg.size());
+        // Set<ARGState> arg = from(pReachedSet).filter(ARGState.class).toSet();
+        // Set<ARGState> arg = getAllStatesOnPathsTo(argPath.getLastState());
+        ARGState errorState = targetStates.iterator().next();
+        Set<ARGState> statesOnErrorPath = ARGUtils.getAllStatesOnPathsTo(errorState);
 
         // get the branchingFormula
         // this formula contains predicates for all branches we took
         // this way we can figure out which branches make a feasible path
-        BooleanFormula branchingFormula = pmgr.buildBranchingFormula(arg);
+        BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath);
 
         if (bfmgr.isTrue(branchingFormula)) {
           logger.log(Level.WARNING, "Could not create error path because of missing branching information!");
@@ -329,7 +327,6 @@ public class GeneratePathrangeAlgorithm
         pProver.push(branchingFormula);
       }
 
-      
       try {
         // need to ask solver for satisfiability again,
         // otherwise model doesn't contain new predicates

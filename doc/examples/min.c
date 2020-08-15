@@ -9,7 +9,7 @@ int min (int a, int b, int c) {
 			if(a < c) {
 				min = a;
 			} else {
-				// ERROR2: __VERIFIER_error();
+				ERROR: __VERIFIER_error();
 				min = c;
 			}
 		}
@@ -19,7 +19,6 @@ int min (int a, int b, int c) {
 			min = c;
 		} else {
 			// c>b
-			ERROR: __VERIFIER_error();
 			min = b;
 		}
 	}

@@ -127,6 +127,9 @@ public interface PathFormulaManager {
   BooleanFormula buildBranchingFormula(Set<ARGState> pElementsOnPath)
       throws CPATransferException, InterruptedException;
 
+  BooleanFormula buildBranchingFormulaSinglePath(Set<ARGState> pElementsOnPath)
+      throws CPATransferException, InterruptedException;
+
   /**
    * Build a formula containing a predicate for all branching situations in the
    * ARG. If a satisfying assignment is created for this formula, it can be used
