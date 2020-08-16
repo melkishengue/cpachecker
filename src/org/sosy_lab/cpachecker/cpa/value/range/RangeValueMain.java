@@ -41,7 +41,6 @@ public class RangeValueMain {
     RangeValueInterval rvi = new RangeValueInterval(startRange, endRange);
     System.out.println(rvi);
 
-    System.out.println(rvi.getEndRange().getVariablesMap());
     System.out.println(rvi.getEndRange().getVariablesMapFullyQualified());
   }
 }

@@ -126,7 +126,7 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
       if (intervalStartImpliesValue) {
         if (!truthValue) {
-          System.out.println("Else case returning...");
+          System.out.println("Else case.");
           return element;
         }
 
@@ -135,7 +135,7 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
       if (intervalEndImpliesValue) {
         if (truthValue) {
-          System.out.println("Then case returning...");
+          System.out.println("Then case.");
           return element;
         }
 
@@ -180,16 +180,11 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
       }
 
       String message =
-          truthValue ? "Symbolic: Then case returning..." : "Symbolic: Else case returnning...";
+          truthValue ? "Symbolic: Then case." : "Symbolic: Else case.";
       System.out.println(message + element);
 
       return element;
     } else if (representsBoolean(value, truthValue)) {
-      // we do not know more than before, and the assumption is fulfilled, so return a copy of the
-      // old state
-      // we need to return a copy, otherwise precision adjustment might reset too much information,
-      // even on the original state
-
       String message =
           truthValue
               ? "The condition is true --> if bloc visited"

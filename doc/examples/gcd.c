@@ -1,17 +1,20 @@
 extern void __VERIFIER_error() __attribute__ ((__noreturn__));
 
-int gcd(int a, int b) {
+void do_stuff(int a) {
+	if (a<1) {
+		ERROR: __VERIFIER_error();
+	}
+}
+
+int main(int a, int b) {
     while (a!=b) {
         if (a>b) {
         	a = a - b;
-        }
-        else {
+        } else {
         	b = b - a;
-        	
+        	if (a == b) do_stuff(a);
         }
     }
-
-    ERROR: __VERIFIER_error();
 
     return a;
 }

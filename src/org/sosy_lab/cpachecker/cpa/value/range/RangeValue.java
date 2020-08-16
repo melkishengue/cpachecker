@@ -29,9 +29,7 @@ import java.util.Map.Entry;
 public class RangeValue {
   List<String> variables = new ArrayList<>();
   List<String> variablesFullyQualified = new ArrayList<>();
-  HashMap<String, Object> variablesMap = new HashMap<>();
   HashMap<String, Object> variablesMapFullyQualified = new HashMap<>();
-  String scope = "UNKNOWN";
   boolean isNull;
   String rawRange;
 
@@ -51,28 +49,12 @@ public class RangeValue {
     variablesFullyQualified = pVariablesFullyQualified;
   }
 
-  public HashMap<String, Object> getVariablesMap() {
-    return variablesMap;
-  }
-
-  public void setVariablesMap(HashMap<String, Object> pVariablesMap) {
-    variablesMap = pVariablesMap;
-  }
-
   public HashMap<String, Object> getVariablesMapFullyQualified() {
     return variablesMapFullyQualified;
   }
 
   public void setVariablesMapFullyQualified(HashMap<String, Object> pVariablesMapFullyQualified) {
     variablesMapFullyQualified = pVariablesMapFullyQualified;
-  }
-
-  public String getScope() {
-    return scope;
-  }
-
-  public void setFunctionName(String pScope) {
-    scope = pScope;
   }
 
   public boolean isNull() {
@@ -91,24 +73,21 @@ public class RangeValue {
     rawRange = pRawRange;
   }
 
-  public RangeValue(String rawRange) {
-    this.rawRange = rawRange;
-    this.isNull = rawRange.equals("null");
+  public RangeValue(String pRawRange) {
+    this.rawRange = pRawRange;
+    this.isNull = pRawRange.equals("null");
 
     if (!this.isNull) {
       String rawRangeNoBraces = rawRange.replace("(", "").replace(")", "");
 
       String[] arrOfStr = rawRangeNoBraces.split(" ", 5);
       for (String a : arrOfStr) {
-        this.scope = this.extractScopeFromRawString(a);
+        String scope = this.extractScopeFromRawString(a);
         String[] variableValuePair = this.extractScopeValue(a);
 
-        this.variables.add(variableValuePair[0]);
-        this.variablesMap.put(variableValuePair[0], variableValuePair[1]);
-
-        this.variablesFullyQualified.add(this.scope + "::" + variableValuePair[0]);
-        this.variablesMapFullyQualified
-            .put(this.scope + "::" + variableValuePair[0], variableValuePair[1]);
+        String variableFullyQualified = scope + "::" + variableValuePair[0];
+        this.variablesFullyQualified.add(variableFullyQualified);
+        this.variablesMapFullyQualified.put(variableFullyQualified, variableValuePair[1]);
       }
     }
   }
@@ -127,9 +106,8 @@ public class RangeValue {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("[ Scope: " + this.scope);
 
-    for (Entry<String, Object> entry : this.variablesMap.entrySet()) {
+    for (Entry<String, Object> entry : this.variablesMapFullyQualified.entrySet()) {
       sb.append(", " + entry.getKey() + ": " + entry.getValue());
     }
 

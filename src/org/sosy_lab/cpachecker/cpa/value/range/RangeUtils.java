@@ -58,7 +58,6 @@ public class RangeUtils {
     StringBuilder sb = new StringBuilder();
 
     for (String line : Files.readAllLines(Paths.get(fileName))) {
-      System.out.println("line = " + line);
       if (!line.startsWith("#")) {
         sb.append(line);
       }
@@ -67,7 +66,9 @@ public class RangeUtils {
     return sb.toString();
   }
 
-  public static String loadRange(String range, String fileName) throws Exception {
+  public static String loadRange(String range, String fileName, boolean performRse) throws Exception {
+    if (!performRse) return "(null, null)";
+
     if (!fileName.equals("")) {
       // reading frm file has always preference, if it is defined it is used
       return RangeUtils.readRangeFromFile(fileName);

@@ -96,6 +96,8 @@ import org.sosy_lab.cpachecker.cpa.predicate.PredicateCPA;
 import org.sosy_lab.cpachecker.cpa.predicate.SlicingAbstractionsUtils;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisState;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisState.ValueAndType;
+import org.sosy_lab.cpachecker.cpa.value.range.RangeUtils;
+import org.sosy_lab.cpachecker.cpa.value.range.RangeValue;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.util.SymbolicValues;
 import org.sosy_lab.cpachecker.exceptions.CPAException;
 import org.sosy_lab.cpachecker.exceptions.CPATransferException;
@@ -223,12 +225,13 @@ public class GeneratePathrangeAlgorithm
             .filter(Predicates.not(Predicates.in(checkedTargetStates)))
             .toList();
 
-    ValueAnalysisState vaState = AbstractStates.extractStateByType(errorStates.get(0), ValueAnalysisState.class);
+
     if (errorStates.size() == 0) {
       System.out.println("No error states could be found. Aborting path range generation.");
       return status;
     }
 
+    ValueAnalysisState vaState = AbstractStates.extractStateByType(errorStates.get(0), ValueAnalysisState.class);
     if (vaState == null) {
       System.out.println("Value Analysis state could not be found. Aborting analysis.");
       return status;
@@ -253,9 +256,16 @@ public class GeneratePathrangeAlgorithm
         range = String.join(" ", rangeChunksList);
         range = "(" + range + ")";
       }
-      range = "[" + range + ", null]";
+      // using the range from the rootstate to define the end range of the generated interval -  this only works in case of a single function
+      ARGState rootState = getRootState(errorStates.get(0));
+      System.out.println("rootState = " + rootState);
+
+      ValueAnalysisState rootVAState = AbstractStates.extractStateByType(rootState, ValueAnalysisState.class);
+      String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
+
+      range = "[" + range + ", " + rootStateEndRange + "]";
       System.out.println("range: " + range);
-      saveRangeToFile(range);
+      RangeUtils.saveRangeToFile("output/pathrange.txt", range);
     } finally {
       checkTime.stop();
     }
@@ -273,10 +283,6 @@ public class GeneratePathrangeAlgorithm
     }*/
   }
 
-  private void saveRangeToFile(String content) {
-
-  }
-
   /**
    * check whether there is a feasible counterexample in the reachedset.
    *
@@ -285,7 +291,7 @@ public class GeneratePathrangeAlgorithm
    * @param reached all reached states of the analysis, some of the states are part of the CEX path
    */
   public List<ValueAssignment> constructModelAssignment(ReachedSet pReachedSet) throws InterruptedException, CPATransferException {
-      Set<ARGState> targetStates = from(pReachedSet).filter(IS_TARGET_STATE).filter(ARGState.class).toSet();
+    Set<ARGState> targetStates = from(pReachedSet).filter(IS_TARGET_STATE).filter(ARGState.class).toSet();
     List<ValueAssignment> model = new ArrayList<>();
 
     Set<ARGState> redundantStates = filterAncestors(targetStates, IS_TARGET_STATE);
@@ -295,19 +301,7 @@ public class GeneratePathrangeAlgorithm
     pReachedSet.removeAll(redundantStates);
     targetStates = Sets.difference(targetStates, redundantStates);
 
-      final boolean shouldCheckBranching;
-      if (targetStates.size() == 1) {
-        ARGState state = Iterables.getOnlyElement(targetStates);
-        while (state.getParents().size() == 1 && state.getChildren().size() <= 1) {
-          state = Iterables.getOnlyElement(state.getParents());
-        }
-        shouldCheckBranching = (state.getParents().size() > 1)
-            || (state.getChildren().size() > 1);
-
-      } else {
-        shouldCheckBranching = true;
-      }
-
+      final boolean shouldCheckBranching = true;
       if (shouldCheckBranching) {
         // Set<ARGState> arg = from(pReachedSet).filter(ARGState.class).toSet();
         // Set<ARGState> arg = getAllStatesOnPathsTo(argPath.getLastState());
@@ -351,6 +345,14 @@ public class GeneratePathrangeAlgorithm
     return model;
   }
 
+  private ARGState getRootState(ARGState leafState) {
+    ARGState state = leafState;
+    while (state.getParents().size() == 1 && state.getChildren().size() <= 1) {
+      state = Iterables.getOnlyElement(state.getParents());
+    }
+
+    return state;
+  }
 
   @Override
   public void collectStatistics(Collection<Statistics> pStatsCollection) {

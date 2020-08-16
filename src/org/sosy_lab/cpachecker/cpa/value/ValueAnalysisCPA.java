@@ -308,7 +308,7 @@ public class ValueAnalysisCPA extends AbstractCPA
 
     try {
       // either load range from path range file, or use defined path range.
-      String range = RangeUtils.loadRange(pathrange, pathrangeFile);
+      String range = RangeUtils.loadRange(pathrange, pathrangeFile, performRse);
       pathrange = range;
       state.setRangeValueInterval(new RangeValueInterval(pathrange));
     } catch(FileNotFoundException e) {
