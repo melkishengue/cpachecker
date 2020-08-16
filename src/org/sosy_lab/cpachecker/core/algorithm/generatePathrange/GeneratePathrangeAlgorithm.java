@@ -213,67 +213,68 @@ public class GeneratePathrangeAlgorithm
   public AlgorithmStatus run(ReachedSet reached) throws CPAException, InterruptedException {
     AlgorithmStatus status = AlgorithmStatus.SOUND_AND_PRECISE;
 
-      status = status.update(algorithm.run(reached));
-      assert ARGUtils.checkARG(reached);
+    status = status.update(algorithm.run(reached));
+    assert ARGUtils.checkARG(reached);
 
-      final List<ARGState> errorStates =
-          from(reached)
-              .transform(AbstractStates.toState(ARGState.class))
-              .filter(AbstractStates.IS_TARGET_STATE)
-              .filter(Predicates.not(Predicates.in(checkedTargetStates)))
-              .toList();
+    final List<ARGState> errorStates =
+        from(reached)
+            .transform(AbstractStates.toState(ARGState.class))
+            .filter(AbstractStates.IS_TARGET_STATE)
+            .filter(Predicates.not(Predicates.in(checkedTargetStates)))
+            .toList();
 
-      if(errorStates.size() == 0) {
-        return status;
+    ValueAnalysisState vaState = AbstractStates.extractStateByType(errorStates.get(0), ValueAnalysisState.class);
+    if (errorStates.size() == 0) {
+      System.out.println("No error states could be found. Aborting path range generation.");
+      return status;
+    }
+
+    if (vaState == null) {
+      System.out.println("Value Analysis state could not be found. Aborting analysis.");
+      return status;
+    }
+
+    // check counterexample
+    checkTime.start();
+    try {
+      List<ValueAssignment> model = constructModelAssignment(reached);
+
+      ArrayList rangeChunksList = new ArrayList<String>();
+      for(ValueAssignment va : model) {
+        String[] arr = va.getName().split("@", 2);
+        String varName = arr[0];
+        if ((arr.length > 1) && (variableExistsAndIsSymbolic(vaState, varName))) {
+          rangeChunksList.add(varName + "=" + va.getValue());
+        }
       }
 
-      ValueAnalysisState vaState = AbstractStates.extractStateByType(errorStates.get(0), ValueAnalysisState.class);
-
-      // check counterexample
-      checkTime.start();
-      try {
-        List<ValueAssignment> model = constructModelAssignment(reached);
-
-        ArrayList rangeChunksList = new ArrayList<String>();
-        for(ValueAssignment va : model) {
-          String[] arr = va.getName().split("@", 2);
-          if (arr.length > 1) {
-            String varName = arr[0];
-            rangeChunksList.add(varName + "=" + va.getValue());
-          }
-        }
-
-        String range = "null";
-        if ((rangeChunksList.size() > 0)) {
-          range = String.join(" ", rangeChunksList);
-        }
-        range = "[(" + range + "), null]";
-        System.out.println("range: " + range);
-        saveRangeToFile(range);
-      } finally {
-        checkTime.stop();
+      String range = "null";
+      if ((rangeChunksList.size() > 0)) {
+        range = String.join(" ", rangeChunksList);
+        range = "(" + range + ")";
       }
+      range = "[" + range + ", null]";
+      System.out.println("range: " + range);
+      saveRangeToFile(range);
+    } finally {
+      checkTime.stop();
+    }
 
     return status;
   }
 
-  private void saveRangeToFile(String content) {
-    try {
-      String fileName = "output/pathrange.txt";
-      File f = new File(fileName);
-      if (f.createNewFile()) {
-        System.out.println("File created: " + f.getName());
-      } else {
-        System.out.println("File already exists.");
-      }
+  private boolean variableExistsAndIsSymbolic (ValueAnalysisState vaState, String varName) {
+    return true;
+    /*for (Entry<MemoryLocation, ValueAndType> e : vaState.getConstants()) {
+      final MemoryLocation memloc = e.getKey();
+      final ValueAndType valueAndType = e.getValue();
 
-      FileWriter fw = new FileWriter(fileName);
-      fw.write(content);
-      fw.close();
-    } catch (IOException e) {
-      System.out.println("An error occurred.");
-      e.printStackTrace();
-    }
+      if ((memloc.getIdentifier() == varName ) && (valueAndType.getType().))
+    }*/
+  }
+
+  private void saveRangeToFile(String content) {
+
   }
 
   /**

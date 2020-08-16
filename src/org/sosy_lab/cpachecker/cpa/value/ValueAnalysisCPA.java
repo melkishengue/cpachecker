@@ -26,6 +26,7 @@ package org.sosy_lab.cpachecker.cpa.value;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -68,6 +69,7 @@ import org.sosy_lab.cpachecker.cpa.arg.path.ARGPath;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisPrecisionAdjustment.PrecAdjustmentOptions;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisPrecisionAdjustment.PrecAdjustmentStatistics;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisTransferRelation.ValueTransferOptions;
+import org.sosy_lab.cpachecker.cpa.value.range.RangeUtils;
 import org.sosy_lab.cpachecker.cpa.value.range.RangeValueInterval;
 import org.sosy_lab.cpachecker.cpa.value.refiner.ValueAnalysisConcreteErrorPathAllocator;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.ConstraintsStrengthenOperator;
@@ -124,6 +126,12 @@ public class ValueAnalysisCPA extends AbstractCPA
     name = "pathrange",
     description = "Defines the initial path range while performing a symbloic execution within a path range.")
   private String pathrange = "(null, null)";
+
+  @Option(
+      secure = true,
+      name = "pathrangeFile",
+      description = "Defines the file where the path should be read from. This property has precedence over the pathrange property.")
+  private String pathrangeFile = "";
 
   @Option(
     secure = true,
@@ -297,8 +305,20 @@ public class ValueAnalysisCPA extends AbstractCPA
   @Override
   public AbstractState getInitialState(CFANode pNode, StateSpacePartition pPartition) {
     ValueAnalysisState state = new ValueAnalysisState(cfa.getMachineModel());
-    RangeValueInterval interval = new RangeValueInterval(pathrange);
-    state.setRangeValueInterval(interval);
+
+    try {
+      // either load range from path range file, or use defined path range.
+      String range = RangeUtils.loadRange(pathrange, pathrangeFile);
+      pathrange = range;
+      state.setRangeValueInterval(new RangeValueInterval(pathrange));
+    } catch(FileNotFoundException e) {
+      System.out.println("An error occurred. The file"  + pathrangeFile +  " could not be found.");
+      e.printStackTrace();
+    } catch(Exception e) {
+      System.out.println("An error occurred.");
+      e.printStackTrace();
+    }
+
     return state;
   }
 
