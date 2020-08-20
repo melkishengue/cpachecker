@@ -69,8 +69,8 @@ public class RangeUtils {
   public static String loadRange(String range, String fileName, boolean performRse) throws Exception {
     if (!performRse) return "(null, null)";
 
-    if (!fileName.equals("")) {
-      // reading frm file has always preference, if it is defined it is used
+    if (fileName != null) {
+      // reading from file has always preference, if it is defined it is used
       return RangeUtils.readRangeFromFile(fileName);
     } else {
       if (!range.equals("")) {

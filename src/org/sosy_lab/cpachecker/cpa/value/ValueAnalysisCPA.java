@@ -131,7 +131,7 @@ public class ValueAnalysisCPA extends AbstractCPA
       secure = true,
       name = "pathrangeFile",
       description = "Defines the file where the path should be read from. This property has precedence over the pathrange property.")
-  private String pathrangeFile = "";
+  private String pathrangeFile = null;
 
   @Option(
     secure = true,

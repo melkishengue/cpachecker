@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 public class RangeValue {
+  private static final String SCOPE_SEPARATOR = "::";
   List<String> variables = new ArrayList<>();
   List<String> variablesFullyQualified = new ArrayList<>();
   HashMap<String, Object> variablesMapFullyQualified = new HashMap<>();
@@ -85,7 +86,7 @@ public class RangeValue {
         String scope = this.extractScopeFromRawString(a);
         String[] variableValuePair = this.extractScopeValue(a);
 
-        String variableFullyQualified = scope + "::" + variableValuePair[0];
+        String variableFullyQualified = scope + SCOPE_SEPARATOR + variableValuePair[0];
         this.variablesFullyQualified.add(variableFullyQualified);
         this.variablesMapFullyQualified.put(variableFullyQualified, variableValuePair[1]);
       }
@@ -93,13 +94,13 @@ public class RangeValue {
   }
 
   private String extractScopeFromRawString(String s) {
-    String[] arrOfStr = s.split("::", 5);
+    String[] arrOfStr = s.split(SCOPE_SEPARATOR, 5);
     String[] arr = Arrays.copyOfRange(arrOfStr, 0, arrOfStr.length - 1);
-    return String.join("::", arr);
+    return String.join(SCOPE_SEPARATOR, arr);
   }
 
   private String[] extractScopeValue(String s) {
-    String[] arrOfStr = s.split("::", 5);
+    String[] arrOfStr = s.split(SCOPE_SEPARATOR, 5);
     return ((String) Array.get(arrOfStr, arrOfStr.length - 1)).split("=");
   }
 
