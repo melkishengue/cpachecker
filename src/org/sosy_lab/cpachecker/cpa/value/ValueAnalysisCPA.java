@@ -310,7 +310,6 @@ public class ValueAnalysisCPA extends AbstractCPA
       // either load range from path range file, or use defined path range.
       String range = RangeUtils.loadRange(pathrange, pathrangeFile, performRse);
       pathrange = range;
-      System.out.println("range = " + range);
       RangeValueInterval initialRangeValueInterval = new RangeValueInterval(pathrange);
       state.setRangeValueInterval(initialRangeValueInterval);
       state.setInitialRangeValueInterval(initialRangeValueInterval);
