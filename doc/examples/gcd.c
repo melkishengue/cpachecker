@@ -12,7 +12,7 @@ int main(int a, int b) {
         	a = a - b;
         } else {
         	b = b - a;
-        	if (a == b) do_stuff(a);
+        	// if (a == b) do_stuff(a);
         }
     }
 

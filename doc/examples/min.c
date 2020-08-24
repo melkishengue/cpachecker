@@ -29,3 +29,5 @@ int min (int a, int b, int c) {
 
 // model = [min::a@2: 1, min::b@2: 0, min::c@2: 2, __ART__2: false, __ART__4: false]
 // model = [min::a@2: 1, min::b@2: 2, min::c@2: 0, __ART__2: true, __ART__3: false, __ART__4: true, __ART__13: false]
+
+// ValueAnalysisRangedCPA

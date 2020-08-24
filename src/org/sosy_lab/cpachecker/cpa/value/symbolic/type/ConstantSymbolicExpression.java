@@ -44,7 +44,7 @@ public final class ConstantSymbolicExpression extends SymbolicExpression {
    * @param pValue the value of the new object
    * @param pType the type of the value of the new object
    */
-  protected ConstantSymbolicExpression(Value pValue, Type pType) {
+  public ConstantSymbolicExpression(Value pValue, Type pType) {
     value = pValue;
     type = pType;
   }

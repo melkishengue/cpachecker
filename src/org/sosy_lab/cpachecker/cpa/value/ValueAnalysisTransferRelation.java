@@ -26,18 +26,25 @@ package org.sosy_lab.cpachecker.cpa.value;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import java.beans.Expression;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.sosy_lab.common.collect.PersistentMap;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -63,8 +70,10 @@ import org.sosy_lab.cpachecker.cfa.ast.APointerExpression;
 import org.sosy_lab.cpachecker.cfa.ast.ARightHandSide;
 import org.sosy_lab.cpachecker.cfa.ast.AStatement;
 import org.sosy_lab.cpachecker.cfa.ast.AVariableDeclaration;
+import org.sosy_lab.cpachecker.cfa.ast.FileLocation;
 import org.sosy_lab.cpachecker.cfa.ast.c.CArraySubscriptExpression;
 import org.sosy_lab.cpachecker.cfa.ast.c.CExpression;
+import org.sosy_lab.cpachecker.cfa.ast.c.CExpressionStatement;
 import org.sosy_lab.cpachecker.cfa.ast.c.CFieldReference;
 import org.sosy_lab.cpachecker.cfa.ast.c.CFloatLiteralExpression;
 import org.sosy_lab.cpachecker.cfa.ast.c.CFunctionCall;
@@ -88,6 +97,7 @@ import org.sosy_lab.cpachecker.cfa.model.AStatementEdge;
 import org.sosy_lab.cpachecker.cfa.model.AssumeEdge;
 import org.sosy_lab.cpachecker.cfa.model.BlankEdge;
 import org.sosy_lab.cpachecker.cfa.model.CFAEdge;
+import org.sosy_lab.cpachecker.cfa.model.CFAEdgeType;
 import org.sosy_lab.cpachecker.cfa.model.FunctionCallEdge;
 import org.sosy_lab.cpachecker.cfa.model.FunctionEntryNode;
 import org.sosy_lab.cpachecker.cfa.model.FunctionExitNode;
@@ -113,6 +123,7 @@ import org.sosy_lab.cpachecker.core.defaults.precision.VariableTrackingPrecision
 import org.sosy_lab.cpachecker.core.interfaces.AbstractState;
 import org.sosy_lab.cpachecker.core.interfaces.AbstractStateWithAssumptions;
 import org.sosy_lab.cpachecker.core.interfaces.Precision;
+import org.sosy_lab.cpachecker.cpa.constraints.constraint.SymbolicExpressionToCExpressionTransformer;
 import org.sosy_lab.cpachecker.cpa.constraints.domain.ConstraintsState;
 import org.sosy_lab.cpachecker.cpa.pointer2.PointerState;
 import org.sosy_lab.cpachecker.cpa.pointer2.PointerTransferRelation;
@@ -121,7 +132,14 @@ import org.sosy_lab.cpachecker.cpa.pointer2.util.LocationSet;
 import org.sosy_lab.cpachecker.cpa.rtt.NameProvider;
 import org.sosy_lab.cpachecker.cpa.rtt.RTTState;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisState.ValueAndType;
+import org.sosy_lab.cpachecker.cpa.value.range.RangeValue;
+import org.sosy_lab.cpachecker.cpa.value.range.RangeValueInterval;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.ConstraintsStrengthenOperator;
+import org.sosy_lab.cpachecker.cpa.value.symbolic.type.ConstantSymbolicExpression;
+import org.sosy_lab.cpachecker.cpa.value.symbolic.type.SymbolicIdentifier;
+import org.sosy_lab.cpachecker.cpa.value.symbolic.type.SymbolicValue;
+import org.sosy_lab.cpachecker.cpa.value.symbolic.type.SymbolicValueVisitor;
+import org.sosy_lab.cpachecker.cpa.value.symbolic.util.SymbolicValues;
 import org.sosy_lab.cpachecker.cpa.value.type.ArrayValue;
 import org.sosy_lab.cpachecker.cpa.value.type.BooleanValue;
 import org.sosy_lab.cpachecker.cpa.value.type.NullValue;
@@ -200,7 +218,7 @@ public class ValueAnalysisTransferRelation
   protected final ValueTransferOptions options;
   protected final @Nullable ValueAnalysisCPAStatistics stats;
 
-  private final ConstraintsStrengthenOperator constraintsStrengthenOperator;
+  protected final ConstraintsStrengthenOperator constraintsStrengthenOperator;
 
   private final Set<String> javaNonStaticVariables = new HashSet<>();
 
@@ -233,7 +251,7 @@ public class ValueAnalysisTransferRelation
    * Save the old State for strengthen.
    * Do not change or modify this state!
    */
-  private ValueAnalysisState oldState;
+  protected ValueAnalysisState oldState;
 
   protected final MachineModel machineModel;
   protected final LogManagerWithoutDuplicates logger;
@@ -1335,7 +1353,7 @@ public class ValueAnalysisTransferRelation
         postProcessedResult.addAll(postProcessing(rawResult, pCfaEdge));
       }
     }
-
+    
     super.resetInfo();
     oldState = null;
 
@@ -1352,7 +1370,7 @@ public class ValueAnalysisTransferRelation
    * @return the strengthened state.
    * @throws UnrecognizedCodeException if the C code involved is not recognized.
    */
-  private ValueAnalysisState handleModf(
+  protected ValueAnalysisState handleModf(
       ARightHandSide pRightHandSide, PointerState pPointerState, ValueAnalysisState pState)
       throws UnrecognizedCodeException, AssertionError {
     ValueAnalysisState newState = pState;
@@ -1420,7 +1438,7 @@ public class ValueAnalysisTransferRelation
     return newState;
   }
 
-  private ValueAnalysisState strengthenWithPointerInformation(
+  protected ValueAnalysisState strengthenWithPointerInformation(
       ValueAnalysisState pValueState,
       PointerState pPointerInfo,
       ARightHandSide pRightHandSide,
@@ -1526,7 +1544,7 @@ public class ValueAnalysisTransferRelation
     return newState;
   }
 
-  private @NonNull Collection<ValueAnalysisState> strengthenWithAssumptions(
+  protected  @NonNull Collection<ValueAnalysisState> strengthenWithAssumptions(
       AbstractStateWithAssumptions pStateWithAssumptions,
       ValueAnalysisState pState,
       CFAEdge pCfaEdge)
@@ -1551,7 +1569,7 @@ public class ValueAnalysisTransferRelation
     }
   }
 
-  private Collection<ValueAnalysisState> strengthen(RTTState rttState, CFAEdge edge) {
+  protected Collection<ValueAnalysisState> strengthen(RTTState rttState, CFAEdge edge) {
 
     ValueAnalysisState newElement = ValueAnalysisState.copyOf(oldState);
 

@@ -32,8 +32,10 @@ import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
@@ -54,6 +56,7 @@ import org.sosy_lab.cpachecker.core.interfaces.AbstractQueryableState;
 import org.sosy_lab.cpachecker.core.interfaces.FormulaReportingState;
 import org.sosy_lab.cpachecker.core.interfaces.Graphable;
 import org.sosy_lab.cpachecker.core.interfaces.PseudoPartitionable;
+import org.sosy_lab.cpachecker.cpa.value.range.RangeValue;
 import org.sosy_lab.cpachecker.cpa.value.range.RangeValueInterval;
 import org.sosy_lab.cpachecker.cpa.value.refiner.ValueAnalysisInterpolant;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.type.ConstantSymbolicExpression;
@@ -98,6 +101,16 @@ public final class ValueAnalysisState
    */
   private RangeValueInterval rangeValueInterval = new RangeValueInterval();
 
+  private RangeValueInterval initialRangeValueInterval = new RangeValueInterval();
+
+  public void setInitialRangeValueInterval(RangeValueInterval pInitialRangeValueInterval) {
+    initialRangeValueInterval = pInitialRangeValueInterval;
+  }
+
+  public RangeValueInterval getInitialRangeValueInterval() {
+    return initialRangeValueInterval;
+  }
+
   public void setRangeValueInterval(RangeValueInterval pRangeValueInterval) {
     rangeValueInterval = pRangeValueInterval;
   }
@@ -141,6 +154,7 @@ public final class ValueAnalysisState
     constantsMap = checkNotNull(state.constantsMap);
     hashCode = state.hashCode;
     rangeValueInterval = state.rangeValueInterval;
+    initialRangeValueInterval = state.initialRangeValueInterval;
     assert hashCode == constantsMap.hashCode();
   }
 

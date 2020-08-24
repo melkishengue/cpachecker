@@ -25,36 +25,43 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import org.sosy_lab.cpachecker.cfa.types.Type;
+import org.sosy_lab.cpachecker.cfa.types.c.CNumericTypes;
+import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisState.ValueAndType;
+import org.sosy_lab.cpachecker.cpa.value.type.BooleanValue;
+import org.sosy_lab.cpachecker.cpa.value.type.NumericValue;
+import org.sosy_lab.cpachecker.cpa.value.type.Value;
+import org.sosy_lab.cpachecker.util.states.MemoryLocation;
 
 public class RangeValue {
   private static final String SCOPE_SEPARATOR = "::";
-  List<String> variables = new ArrayList<>();
-  List<String> variablesFullyQualified = new ArrayList<>();
-  HashMap<String, Object> variablesMapFullyQualified = new HashMap<>();
+  List<MemoryLocation> variables = new ArrayList<>();
+  List<MemoryLocation> variablesFullyQualified = new ArrayList<>();
+  HashMap<MemoryLocation, ValueAndType> variablesMapFullyQualified = new HashMap<>();
   boolean isNull;
   String rawRange;
 
-  public List<String> getVariables() {
+  public List<MemoryLocation> getVariables() {
     return variables;
   }
 
-  public void setVariables(List<String> pVariables) {
+  public void setVariables(List<MemoryLocation> pVariables) {
     variables = pVariables;
   }
 
-  public List<String> getVariablesFullyQualified() {
+  public List<MemoryLocation> getVariablesFullyQualified() {
     return variablesFullyQualified;
   }
 
-  public void setVariablesFullyQualified(List<String> pVariablesFullyQualified) {
+  public void setVariablesFullyQualified(List<MemoryLocation> pVariablesFullyQualified) {
     variablesFullyQualified = pVariablesFullyQualified;
   }
 
-  public HashMap<String, Object> getVariablesMapFullyQualified() {
+  public HashMap<MemoryLocation, ValueAndType> getVariablesMapFullyQualified() {
     return variablesMapFullyQualified;
   }
 
-  public void setVariablesMapFullyQualified(HashMap<String, Object> pVariablesMapFullyQualified) {
+  public void setVariablesMapFullyQualified(HashMap<MemoryLocation, ValueAndType> pVariablesMapFullyQualified) {
     variablesMapFullyQualified = pVariablesMapFullyQualified;
   }
 
@@ -85,12 +92,27 @@ public class RangeValue {
       for (String a : arrOfStr) {
         String scope = this.extractScopeFromRawString(a);
         String[] variableValuePair = this.extractScopeValue(a);
+        Type type = detectType(variableValuePair[1]);
+        ValueAndType valueAndType = createValueAndType(variableValuePair[1], type);
 
         String variableFullyQualified = scope + SCOPE_SEPARATOR + variableValuePair[0];
-        this.variablesFullyQualified.add(variableFullyQualified);
-        this.variablesMapFullyQualified.put(variableFullyQualified, variableValuePair[1]);
+        MemoryLocation memloc = MemoryLocation.valueOf(variableFullyQualified);
+        this.variablesFullyQualified.add(memloc);
+        this.variablesMapFullyQualified.put(memloc, valueAndType);
       }
     }
+  }
+
+  private ValueAndType createValueAndType(String value, Type type) {
+    // TODO extend to support more types
+    if (type.equals(CNumericTypes.BOOL)) return new ValueAndType(BooleanValue.valueOf(Boolean.parseBoolean(value)), type);
+    else return new ValueAndType(new NumericValue(Integer.parseInt(value)), type);
+  }
+
+  private Type detectType(String value) {
+    // TODO extend to support more types
+    if   (value.equals("true") || value.equals("false")) return CNumericTypes.BOOL;
+    else return CNumericTypes.INT;
   }
 
   private String extractScopeFromRawString(String s) {
@@ -107,14 +129,9 @@ public class RangeValue {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-
-    for (Entry<String, Object> entry : this.variablesMapFullyQualified.entrySet()) {
-      sb.append(", " + entry.getKey() + ": " + entry.getValue());
-    }
-
-    // sb.append(", Raw: " + this.rawRange);
-    sb.append(" ]");
-    // sb.append(System.getProperty("line.separator"));
+    sb.append("(");
+    sb.append( variablesMapFullyQualified.size() > 0 ? variablesMapFullyQualified : "{null}");
+    sb.append(")");
     return sb.toString();
   }
 }

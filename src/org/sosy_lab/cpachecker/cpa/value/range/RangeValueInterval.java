@@ -81,9 +81,12 @@ public class RangeValueInterval {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
+    sb.append("[");
 
     sb.append(this.startRange.toString());
     sb.append(this.endRange.toString());
+
+    sb.append("]");
 
     return sb.toString();
   }
