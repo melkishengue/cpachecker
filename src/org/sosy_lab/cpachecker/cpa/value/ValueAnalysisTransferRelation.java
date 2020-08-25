@@ -1055,9 +1055,11 @@ public class ValueAnalysisTransferRelation
       // if there is no information left to evaluate but the value is unknown, we assign a symbolic
       // identifier to keep track of the variable.
       if (value.isUnknown()) {
+        System.out.println("Value is unkwown !");
         unknownValueHandler.handle(assignedVar, lType, newElement, visitor);
 
       } else {
+        System.out.println("Assigning a constant !");
         newElement.assignConstant(assignedVar, value, lType);
       }
     }

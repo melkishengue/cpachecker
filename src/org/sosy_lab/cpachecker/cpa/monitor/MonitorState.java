@@ -26,9 +26,13 @@ package org.sosy_lab.cpachecker.cpa.monitor;
 import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.io.NotSerializableException;
+import java.util.HashSet;
+import java.util.Set;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.sosy_lab.cpachecker.core.defaults.AbstractSingleWrapperState;
 import org.sosy_lab.cpachecker.core.interfaces.AbstractState;
+import org.sosy_lab.cpachecker.core.interfaces.Property;
+import org.sosy_lab.cpachecker.core.interfaces.Targetable;
 import org.sosy_lab.cpachecker.core.interfaces.conditions.AvoidanceReportingState;
 import org.sosy_lab.cpachecker.util.Pair;
 import org.sosy_lab.cpachecker.util.assumptions.PreventingHeuristic;
@@ -53,8 +57,18 @@ public class MonitorState extends AbstractSingleWrapperState implements Avoidanc
     throw new NotSerializableException();
   }
 
-  static enum TimeoutState implements AbstractState {
+  static enum TimeoutState implements AbstractState, Targetable {
     INSTANCE;
+
+    @Override
+    public boolean isTarget() {
+      return true;
+    }
+
+    @Override
+    public Set<Property> getViolatedProperties() throws IllegalStateException {
+      return new HashSet<Property>();
+    }
 
     @Override
     public String toString() {

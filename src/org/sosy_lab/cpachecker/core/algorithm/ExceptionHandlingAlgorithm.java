@@ -33,6 +33,7 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
@@ -53,6 +54,7 @@ import org.sosy_lab.cpachecker.cpa.arg.path.ARGPath;
 import org.sosy_lab.cpachecker.cpa.bam.BAMCPA;
 import org.sosy_lab.cpachecker.exceptions.CPAEnabledAnalysisPropertyViolationException;
 import org.sosy_lab.cpachecker.exceptions.CPAException;
+import org.sosy_lab.cpachecker.exceptions.CPATimeoutException;
 import org.sosy_lab.cpachecker.exceptions.InfeasibleCounterexampleException;
 import org.sosy_lab.cpachecker.exceptions.RefinementFailedException;
 import org.sosy_lab.cpachecker.exceptions.UnsupportedCodeException;
@@ -104,6 +106,13 @@ public class ExceptionHandlingAlgorithm
       description = "continue analysis after a unsupported code was found on one path"
     )
     private boolean continueAfterUnsupportedCode = false;
+
+    @Option(
+        secure = true,
+        name = "analysis.generateRangeAfterTimeout",
+        description = "generate a path range after a timeout exception has occurred"
+    )
+    private boolean generateRangeAfterTimeout = false;
 
     private ExceptionHandlingOptions(Configuration pConfig) throws InvalidConfigurationException {
       pConfig.inject(this);
@@ -171,6 +180,7 @@ public class ExceptionHandlingAlgorithm
         // mark the analysis as unsound and continue searching for errors on other
         // paths through the program
       } catch (InfeasibleCounterexampleException e) {
+        System.out.println("InfeasibleCounterexampleException occurred.");
         // we don't want to continue, so no handling is necessary
         if (!options.continueAfterInfeasibleError) {
           throw e;
@@ -205,6 +215,9 @@ public class ExceptionHandlingAlgorithm
 
         // handle occurrence of unsupported code. We can still check all remaining
         // paths in the program for errors
+      } catch (CPATimeoutException e) {
+        System.out.println("CPATimeoutException occurred in ExceptionHandlingAlgorithm.");
+        throw e;
       } catch (UnsupportedCodeException e) {
         // we don't want to continue, so no handling is necessary
         if (!options.continueAfterUnsupportedCode || e.getParentState() == null) {

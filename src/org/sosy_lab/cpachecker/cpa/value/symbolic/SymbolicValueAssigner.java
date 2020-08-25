@@ -103,6 +103,8 @@ public class SymbolicValueAssigner implements MemoryLocationValueHandler {
       ValueAnalysisState pState, ExpressionValueVisitor pValueVisitor)
       throws UnrecognizedCodeException {
 
+    System.out.println("We are in the handle function !");
+
     if (isEligibleForSymbolicValue(pVarType)) {
       assignNewSymbolicIdentifier(pState, pVarLocation, pVarType, pValueVisitor);
 
@@ -136,6 +138,8 @@ public class SymbolicValueAssigner implements MemoryLocationValueHandler {
       Type pVarType,
       ExpressionValueVisitor pValueVisitor)
       throws UnrecognizedCodeException {
+
+    System.out.println("Assinging new SV !");
 
     if (pVarType instanceof JType) {
        addSymbolicTracking(pState, pVarLocation, (JType) pVarType);

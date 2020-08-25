@@ -49,6 +49,7 @@ import org.sosy_lab.cpachecker.core.interfaces.AbstractState;
 import org.sosy_lab.cpachecker.core.interfaces.ConfigurableProgramAnalysis;
 import org.sosy_lab.cpachecker.core.interfaces.Precision;
 import org.sosy_lab.cpachecker.core.interfaces.TransferRelation;
+import org.sosy_lab.cpachecker.cpa.automaton.AutomatonInternalState;
 import org.sosy_lab.cpachecker.cpa.monitor.MonitorState.TimeoutState;
 import org.sosy_lab.cpachecker.exceptions.CPATransferException;
 import org.sosy_lab.cpachecker.util.Pair;
@@ -125,12 +126,16 @@ public class MonitorTransferRelation extends SingleEdgeTransferRelation {
         // given to complete the task specified by timeLimit
         successors = future.get(timeLimit, TimeUnit.MILLISECONDS);
       } catch (TimeoutException e) {
+        System.out.println("TimeoutException");
         preventingCondition = Pair.of(PreventingHeuristic.SUCCESSORCOMPTIME, timeLimit);
 
         // add dummy successor
         successors = Collections.singleton(TimeoutState.INSTANCE);
+        // MonitorExceptionErrorState errorState = new MonitorExceptionErrorState();
+        // successors.add(errorState);
 
       } catch (InterruptedException e) {
+        System.out.println("InterruptedException");
         Thread.currentThread().interrupt();
         // TODO handle InterruptedException better
         preventingCondition = Pair.of(PreventingHeuristic.SUCCESSORCOMPTIME, timeLimit);
@@ -139,6 +144,7 @@ public class MonitorTransferRelation extends SingleEdgeTransferRelation {
         successors = Collections.singleton(TimeoutState.INSTANCE);
 
       } catch (ExecutionException e) {
+        System.out.println("ExecutionException");
         Throwables.propagateIfPossible(e.getCause(), CPATransferException.class);
         // TransferRelation.getAbstractSuccessors() threw unexpected checked exception!
         throw new UnexpectedCheckedException("transfer relation", e.getCause());
@@ -161,6 +167,8 @@ public class MonitorTransferRelation extends SingleEdgeTransferRelation {
 
     // check for violation of limits
     if (preventingCondition == null && timeLimitForPath > 0 && totalTimeOnPath > timeLimitForPath) {
+      System.out.println("Generating timeout state because " + totalTimeOnPath + " is bigger than " + timeLimitForPath);
+      successors = Collections.singleton(TimeoutState.INSTANCE);
         preventingCondition = Pair.of(PreventingHeuristic.PATHCOMPTIME, timeLimitForPath);
     }
 

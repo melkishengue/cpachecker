@@ -222,8 +222,13 @@ public class GeneratePathrangeAlgorithm
         from(reached)
             .transform(AbstractStates.toState(ARGState.class))
             .filter(AbstractStates.IS_TARGET_STATE)
-            .filter(Predicates.not(Predicates.in(checkedTargetStates)))
+            // .filter(Predicates.not(Predicates.in(checkedTargetStates)))
             .toList();
+
+
+    // ARGState errorState = errorStates.size() == 2 ? errorStates.get(0).getParents().iterator().next() :
+
+    System.out.println("errorStates = " + errorStates);
 
 
     if (errorStates.size() == 0) {
@@ -231,11 +236,11 @@ public class GeneratePathrangeAlgorithm
       return status;
     }
 
-    ValueAnalysisState vaState = AbstractStates.extractStateByType(errorStates.get(0), ValueAnalysisState.class);
+    /*ValueAnalysisState vaState = AbstractStates.extractStateByType(errorStates.get(0), ValueAnalysisState.class);
     if (vaState == null) {
       System.out.println("Value Analysis state could not be found. Aborting analysis.");
       return status;
-    }
+    }*/
 
     // check counterexample
     checkTime.start();
@@ -246,7 +251,8 @@ public class GeneratePathrangeAlgorithm
       for(ValueAssignment va : model) {
         String[] arr = va.getName().split("@", 2);
         String varName = arr[0];
-        if ((arr.length > 1) && (variableExistsAndIsSymbolic(vaState, varName))) {
+        // if ((arr.length > 1) && (variableExistsAndIsSymbolic(vaState, varName))) {
+        if (arr.length > 1) {
           rangeChunksList.add(varName + "=" + va.getValue());
         }
       }
@@ -258,7 +264,7 @@ public class GeneratePathrangeAlgorithm
       }
       // using the range from the rootstate to define the end range of the generated interval -  this only works in case of a single function
       ARGState rootState = getRootState(errorStates.get(0));
-      System.out.println("rootState = " + rootState);
+      // System.out.println("rootState = " + rootState);
 
       ValueAnalysisState rootVAState = AbstractStates.extractStateByType(rootState, ValueAnalysisState.class);
       String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
@@ -307,6 +313,8 @@ public class GeneratePathrangeAlgorithm
         // Set<ARGState> arg = getAllStatesOnPathsTo(argPath.getLastState());
         ARGState errorState = targetStates.iterator().next();
         Set<ARGState> statesOnErrorPath = ARGUtils.getAllStatesOnPathsTo(errorState);
+
+        // System.out.println("statesOnErrorPath = " + statesOnErrorPath);
 
         // get the branchingFormula
         // this formula contains predicates for all branches we took
