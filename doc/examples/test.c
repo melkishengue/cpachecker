@@ -4,11 +4,11 @@ int foo(int x) {
 	return x + 10;
 }
 
-int main () {
-// int main (int a, int b, int c) {
+// int main () {
+int main (int a, int b, int c) {
 	int min = 0;
 
-	int a; int b; int c;
+	// int a; int b; int c;
 
 	a = b - c;	
 
