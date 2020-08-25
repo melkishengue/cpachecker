@@ -19,6 +19,8 @@ int main () {
 
 	a = b;
 
+	// a=1, b=1, foo(b)=11
+
 	if (a < foo(b)) {
 		if (b < c) {
 			min = a;
