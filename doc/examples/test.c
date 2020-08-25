@@ -5,30 +5,23 @@ int foo(int x) {
 }
 
 int main (int a, int b, int c) {
-	int min = 0;
-
+	int res;
 	a = b - c;	
-
 	c = a + 1;
 
 	if (a < b) {
 		a = b - 10;
 		b = a + 5;
-		d = d + e;
-		e = e-1;
 
-
-		if (a < b + c) { // b-10 < a+5+c 
+		if (a < foo(b + c)) {
 			// ERROR: __VERIFIER_error();
-			d = e-2*d;
 			res = a;
 		} else {
-			d = e+2*d;
 			res = b;
 		}
 	}
 
-	return a;
+	return res;
 }
 
 // [(main::a=4 main::b=2, main::c=6), null]
