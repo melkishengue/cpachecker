@@ -479,6 +479,7 @@ public final class ValueAnalysisState
       sb.append(">\n");
     }
 
+    sb.append(this.initialRangeValueInterval);
     sb.append(this.rangeValueInterval);
     return sb.append("] size->  ").append(constantsMap.size()).toString();
   }

@@ -165,6 +165,8 @@ public abstract class ForwardingTransferRelation<S, T extends AbstractState, P e
 
       case AssumeEdge:
         final AssumeEdge assumption = (AssumeEdge) cfaEdge;
+        System.out.println("assumption = " + assumption);
+        System.out.println("assumption.getExpression() = " + assumption.getExpression());
         successor =
             handleAssumption(
                 assumption, assumption.getExpression(), assumption.getTruthAssumption());
@@ -174,6 +176,7 @@ public abstract class ForwardingTransferRelation<S, T extends AbstractState, P e
         final FunctionCallEdge fnkCall = (FunctionCallEdge) cfaEdge;
         final FunctionEntryNode succ = fnkCall.getSuccessor();
         final String calledFunctionName = succ.getFunctionName();
+
         successor =
             handleFunctionCallEdge(
                 fnkCall, fnkCall.getArguments(), succ.getFunctionParameters(), calledFunctionName);

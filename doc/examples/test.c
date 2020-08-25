@@ -1,11 +1,25 @@
 extern void __VERIFIER_error() __attribute__ ((__noreturn__));
 
-int main (int a, int b, int c) {
+int foo(int x) {
+	return x + 10;
+}
+
+int main () {
+// int main (int a, int b, int c) {
 	int min = 0;
 
-	a = b - c;
+	int a; int b; int c;
 
-	if (a < b) {
+	a = b - c;	
+
+	// int d;
+	int d = a - c;
+
+	int x = d + 19 - a*2 + b;
+
+	a = b;
+
+	if (a < foo(b)) {
 		if (b < c) {
 			min = a;
 		} else {
@@ -23,7 +37,7 @@ int main (int a, int b, int c) {
 		}
 	}
 
-	return min;
+	return 0;
 }
 
 // [(main::a=1 main::b=2 main::c=0), null]

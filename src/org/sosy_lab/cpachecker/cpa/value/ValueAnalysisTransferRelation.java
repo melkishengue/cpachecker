@@ -720,6 +720,7 @@ public class ValueAnalysisTransferRelation
     }
 
     if (init instanceof AInitializerExpression) {
+
       ExpressionValueVisitor evv = getVisitor();
       AExpression exp = ((AInitializerExpression) init).getExpression();
       initialValue = getExpressionValue(exp, declarationType, evv);
@@ -961,7 +962,7 @@ public class ValueAnalysisTransferRelation
     return state; // the default return-value is the old state
   }
 
-  private boolean isTrackedType(Type pType) {
+  protected boolean isTrackedType(Type pType) {
     return !(pType instanceof JType)
         || options.trackJavaArrayValues
         || !(pType instanceof JArrayType);

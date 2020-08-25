@@ -33,13 +33,18 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.sosy_lab.common.log.LogManager;
 import org.sosy_lab.cpachecker.cfa.CFA;
 import org.sosy_lab.cpachecker.cfa.ast.AAssignment;
+import org.sosy_lab.cpachecker.cfa.ast.ADeclaration;
 import org.sosy_lab.cpachecker.cfa.ast.AExpression;
 import org.sosy_lab.cpachecker.cfa.ast.AIdExpression;
+import org.sosy_lab.cpachecker.cfa.ast.AInitializerExpression;
 import org.sosy_lab.cpachecker.cfa.ast.ALeftHandSide;
 import org.sosy_lab.cpachecker.cfa.ast.ARightHandSide;
+import org.sosy_lab.cpachecker.cfa.ast.AVariableDeclaration;
 import org.sosy_lab.cpachecker.cfa.ast.c.CExpression;
 import org.sosy_lab.cpachecker.cfa.ast.java.JExpression;
+import org.sosy_lab.cpachecker.cfa.model.ADeclarationEdge;
 import org.sosy_lab.cpachecker.cfa.model.AStatementEdge;
+import org.sosy_lab.cpachecker.cfa.model.AssumeEdge;
 import org.sosy_lab.cpachecker.cfa.model.CFAEdge;
 import org.sosy_lab.cpachecker.cfa.model.CFAEdgeType;
 import org.sosy_lab.cpachecker.cfa.types.Type;
@@ -107,10 +112,10 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
       stats.incrementDeterministicAssumptions();
     }
 
-    System.out.println("Range is " + state.getRangeValueInterval());
-
     if (!value.isExplicitlyKnown()) {
       ValueAnalysisState element = ValueAnalysisState.copyOf(state);
+
+      System.out.println("element.getConstants() = " + element.getConstants());
       
       // creates new left and right unbounded interval
       // truthvalue == true --> then case of branch {new state(BBthen, τstart, null)}
@@ -119,11 +124,8 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
       Boolean intervalStartImpliesValue = false;
       Boolean intervalEndImpliesValue = false;
 
-      // System.out.println("Interval " + state.getRangeValueInterval());
-
       if (!startRangeValue.isNull()) {
         Map<MemoryLocation, ValueAndType> variables = startRangeValue.getVariablesMapFullyQualified();
-        System.out.println(expression + " variables1 = " + variables);
         ValueAnalysisState duplicate1 = ValueAnalysisState.copyOf(state);
 
         for (Entry<MemoryLocation, ValueAndType> entry : variables.entrySet()) {
@@ -139,7 +141,6 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
       if (!endRangeValue.isNull()) {
         Map<MemoryLocation, ValueAndType> variables = endRangeValue.getVariablesMapFullyQualified();
-        System.out.println(expression + " variables2 = " + variables);
         ValueAnalysisState duplicate2 = ValueAnalysisState.copyOf(state);
 
         for (Entry<MemoryLocation, ValueAndType> entry : variables.entrySet()) {
@@ -352,108 +353,28 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
     }
 
     for (AbstractState vaState : postProcessedResult) {
-      if (pCfaEdge.getEdgeType() != CFAEdgeType.StatementEdge) {
-        continue;
-      }
+      if ((pCfaEdge.getEdgeType() != CFAEdgeType.StatementEdge) && (pCfaEdge.getEdgeType() != CFAEdgeType.DeclarationEdge)) continue;
 
-      AExpression op1 = ((AAssignment)(((AStatementEdge)pCfaEdge).getStatement())).getLeftHandSide();
-
-      if (op1 instanceof AIdExpression) {
-        // assignment of the form a = ...
-        // make a duplicate of state
-        ValueAnalysisState duplicate = ValueAnalysisState.copyOf((ValueAnalysisState) vaState);
-        ValueAnalysisState duplicate2 = ValueAnalysisState.copyOf((ValueAnalysisState) vaState);
-        // fetch all symbolic value in each constants
-        Set<SymbolicIdentifier> symbolicValues = new HashSet<>();
-        SymbolicValues.initialize();
-
-        for (Value v : Iterables.transform(state.getConstants(), e -> e.getValue().getValue())) {
-          if (v instanceof SymbolicValue) {
-            symbolicValues.addAll(SymbolicValues.getContainedSymbolicIdentifiers((SymbolicValue) v));
-          }
-        }
-
-        // replace by value from range
-        Iterator<SymbolicIdentifier> iter = symbolicValues.iterator();
-        RangeValueInterval rviInitial = state.getInitialRangeValueInterval();
-
-        while (iter.hasNext()) {
-          SymbolicIdentifier identifier = iter.next();
-          MemoryLocation m = identifier.getRepresentedLocation().get();
-
-          // get value from constants map and
-          ValueAndType constant = rviInitial.getStartRange().getVariablesMapFullyQualified().get(m);
-          ValueAndType constant2 = rviInitial.getEndRange().getVariablesMapFullyQualified().get(m);
-
-          System.out.println(m + ", constant = " + constant);
-          System.out.println(m + ", constant2 = " + constant2);
-
-          if (constant != null) {
-            // assign constant
-            // TODO remove hardcoded var identifier
-            assignConstantMultipleTimes(duplicate, m.getAsSimpleString(), constant.getValue());
-          }
-
-          if (constant2 != null) {
-            // assign constant
-            // TODO remove hardcoded var identifier
-            assignConstantMultipleTimes(duplicate2, m.getAsSimpleString(), constant2.getValue());
-          }
-        }
-
-        // use expression value visitor to compute each real value
-        ExpressionValueVisitor evv = getVisitor(duplicate, functionName);
-        ExpressionValueVisitor evv2 = getVisitor(duplicate2, functionName);
-
-        for (Entry<MemoryLocation, ValueAndType> e : duplicate.getConstants()) {
-          ValueAndType v = e.getValue();
-          Value value = v.getValue();
-          Type type = v.getType();
-          MemoryLocation location = e.getKey();
-
-          if (value instanceof SymbolicValue) {
-            String memoryLocationVariableName = location.getAsSimpleString();
-            String assignedVariable = ((AIdExpression) op1).getDeclaration().getQualifiedName();
-
-            if (memoryLocationVariableName.equals(assignedVariable)) {
-              SymbolicValueVisitor svv = new SymbolicExpressionToCExpressionTransformer();
-              ConstantSymbolicExpression
-                  constantSymbolicExpression = new ConstantSymbolicExpression(value, type);
-
-              CExpression expression = (CExpression) svv.visit(constantSymbolicExpression);
-              System.out.println("expression = " + expression);
-
-              Value val = getExpressionValue(expression, type, evv);
-              Value val2 = getExpressionValue(expression, type, evv2);
-
-              // update range value interval start if new value
-              if (val.isExplicitlyKnown()) {
-                System.out.println("updating start range variable " + memoryLocationVariableName + " with value " + val);
-                RangeValue startRange = state.getRangeValueInterval().getStartRange();
-                ValueAndType valueAndType = new ValueAndType(val, type);
-                startRange.getVariablesMapFullyQualified().put(location, valueAndType);
-
-                ((ValueAnalysisState) vaState).getRangeValueInterval().setStartRange(startRange);
-              } else {
-                System.out.println("Start range variable " + memoryLocationVariableName + " value is unknown");
-              }
-
-              if (val2.isExplicitlyKnown()) {
-                System.out.println("updating end range variable " + memoryLocationVariableName + " with value " + val2);
-                RangeValue endRange = state.getRangeValueInterval().getEndRange();
-                ValueAndType valueAndType2 = new ValueAndType(val2, type);
-                endRange.getVariablesMapFullyQualified().put(location, valueAndType2);
-
-                ((ValueAnalysisState) vaState).getRangeValueInterval().setEndRange(endRange);
-              } else {
-                System.out.println("End range variable " + memoryLocationVariableName + " value is unknown");
-              }
-
-              break;
-            }
-          }
+      if (pCfaEdge.getEdgeType() == CFAEdgeType.DeclarationEdge) {
+        if (!shouldProcessDeclarationEdge((ADeclarationEdge)pCfaEdge)) {
+          continue;
         }
       }
+
+      switch (pCfaEdge.getEdgeType()) {
+
+        case StatementEdge:
+          vaState = postProcessStatementEdge(pCfaEdge, (ValueAnalysisState) vaState);
+          break;
+
+        case DeclarationEdge:
+          vaState = postProcessDeclarationEdge(pCfaEdge, (ValueAnalysisState) vaState);
+          break;
+
+        default:
+          System.out.println("Don't know which type of edge we have here.");
+      }
+
     }
 
     super.resetInfo();
@@ -462,7 +383,203 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
     return postProcessedResult;
   }
 
+  @Override
+  protected Collection<ValueAnalysisState> postProcessing(ValueAnalysisState successor, CFAEdge edge) {
+    System.out.println("--- Calling post processing from ranged.");
+    // always return a new state (requirement for strengthening states with interpolants)
+    if (successor != null) {
+      successor = ValueAnalysisState.copyOf(successor);
+    }
+
+    return super.postProcessing(successor, edge);
+  }
+
+  public Value evaluateStatementExpression(Value value, Type type, ExpressionValueVisitor evv)  throws CPATransferException {
+    // create expression out of sym expression
+    SymbolicValueVisitor svv = new SymbolicExpressionToCExpressionTransformer();
+    ConstantSymbolicExpression
+        constantSymbolicExpression = new ConstantSymbolicExpression(value, type);
+
+    CExpression expression = (CExpression) svv.visit(constantSymbolicExpression);
+
+    // evaluate created expression
+    Value val = getExpressionValue(expression, type, evv);
+
+    return val;
+  }
+
+  public ValueAnalysisState postProcessDeclarationEdge(CFAEdge pCfaEdge, ValueAnalysisState pValueAnalysisState) throws CPATransferException {
+    ValueAnalysisState vaState = ValueAnalysisState.copyOf(pValueAnalysisState);
+
+    AVariableDeclaration decl = (AVariableDeclaration)((ADeclarationEdge)pCfaEdge).getDeclaration();
+    String assignedVariable = decl.getQualifiedName();
+
+    System.out.println("-----------------------------------------------------------------------------");
+    System.out.println("Started post processing of declaration edge: " + decl);
+
+    RangeValueInterval rviInitial = vaState.getInitialRangeValueInterval();
+    ValueAnalysisState duplicate = identifyAndReplaceSymbolicValuesByValues(pValueAnalysisState, rviInitial.getStartRange());
+    ValueAnalysisState duplicate2 = identifyAndReplaceSymbolicValuesByValues(pValueAnalysisState, rviInitial.getEndRange());
+
+    // use expression value visitor to compute each real value
+    ExpressionValueVisitor evv = getVisitor(duplicate, functionName);
+    ExpressionValueVisitor evv2 = getVisitor(duplicate2, functionName);
+
+    for (Entry<MemoryLocation, ValueAndType> e : duplicate.getConstants()) {
+      ValueAndType v = e.getValue();
+      Value value = v.getValue();
+      Type type = v.getType();
+      MemoryLocation location = e.getKey();
+
+      if (value instanceof SymbolicValue) {
+        String memoryLocationVariableName = location.getAsSimpleString();
+
+        if (memoryLocationVariableName.equals(assignedVariable)) {
+          Value val = evaluateStatementExpression(value, type, evv);
+          Value val2 = evaluateStatementExpression(value, type, evv2);
+
+          // update range value interval start if new value
+          if (val.isExplicitlyKnown()) {
+            System.out.println("updating start range variable " + memoryLocationVariableName + " with value " + val);
+            RangeValue startRange = vaState.getRangeValueInterval().getStartRange();
+            ValueAndType valueAndType = new ValueAndType(val, type);
+            startRange.getVariablesMapFullyQualified().put(location, valueAndType);
+
+            vaState.getRangeValueInterval().setStartRange(startRange);
+          } else {
+            System.out.println("Start range variable " + memoryLocationVariableName + " value is unknown");
+          }
+
+          if (val2.isExplicitlyKnown()) {
+            System.out.println("updating end range variable " + memoryLocationVariableName + " with value " + val2);
+            RangeValue endRange = vaState.getRangeValueInterval().getEndRange();
+            ValueAndType valueAndType2 = new ValueAndType(val2, type);
+            endRange.getVariablesMapFullyQualified().put(location, valueAndType2);
+
+            vaState.getRangeValueInterval().setEndRange(endRange);
+          } else {
+            System.out.println("End range variable " + memoryLocationVariableName + " value is unknown");
+          }
+
+          break;
+        }
+      }
+    }
+
+    return vaState;
+  }
+
+  public ValueAnalysisState postProcessStatementEdge(CFAEdge pCfaEdge, ValueAnalysisState pValueAnalysisState) throws CPATransferException {
+    ValueAnalysisState vaState = ValueAnalysisState.copyOf(pValueAnalysisState);
+    AAssignment assignment = ((AAssignment)(((AStatementEdge)pCfaEdge).getStatement()));
+    AExpression op1 = assignment.getLeftHandSide();
+
+    System.out.println("-----------------------------------------------------------------------------");
+    System.out.println("Started post processing of statement edge: " + assignment);
+
+    if (op1 instanceof AIdExpression) {
+      String assignedVariable = ((AIdExpression) op1).getDeclaration().getQualifiedName();
+
+      // assignment of the form a = ...
+      RangeValueInterval rviInitial = vaState.getInitialRangeValueInterval();
+      ValueAnalysisState duplicate = identifyAndReplaceSymbolicValuesByValues(pValueAnalysisState, rviInitial.getStartRange());
+      ValueAnalysisState duplicate2 = identifyAndReplaceSymbolicValuesByValues(pValueAnalysisState, rviInitial.getEndRange());
+
+      // use expression value visitor to compute each real value
+      ExpressionValueVisitor evv = getVisitor(duplicate, functionName);
+      ExpressionValueVisitor evv2 = getVisitor(duplicate2, functionName);
+
+      for (Entry<MemoryLocation, ValueAndType> e : duplicate.getConstants()) {
+        ValueAndType v = e.getValue();
+        Value value = v.getValue();
+        Type type = v.getType();
+        MemoryLocation location = e.getKey();
+
+        if (value instanceof SymbolicValue) {
+          String memoryLocationVariableName = location.getAsSimpleString();
+
+          if (memoryLocationVariableName.equals(assignedVariable)) {
+            Value val = evaluateStatementExpression(value, type, evv);
+            Value val2 = evaluateStatementExpression(value, type, evv2);
+
+            // update range value interval start if new value
+            if (val.isExplicitlyKnown()) {
+              System.out.println("updating start range variable " + memoryLocationVariableName + " with value " + val);
+              RangeValue startRange = vaState.getRangeValueInterval().getStartRange();
+              ValueAndType valueAndType = new ValueAndType(val, type);
+              startRange.getVariablesMapFullyQualified().put(location, valueAndType);
+
+              vaState.getRangeValueInterval().setStartRange(startRange);
+            } else {
+              System.out.println("Start range variable " + memoryLocationVariableName + " value is unknown");
+            }
+
+            if (val2.isExplicitlyKnown()) {
+              System.out.println("updating end range variable " + memoryLocationVariableName + " with value " + val2);
+              RangeValue endRange = vaState.getRangeValueInterval().getEndRange();
+              ValueAndType valueAndType2 = new ValueAndType(val2, type);
+              endRange.getVariablesMapFullyQualified().put(location, valueAndType2);
+
+              vaState.getRangeValueInterval().setEndRange(endRange);
+            } else {
+              System.out.println("End range variable " + memoryLocationVariableName + " value is unknown");
+            }
+
+            break;
+          }
+        }
+      }
+    }
+
+    return vaState;
+  }
+
+  public ValueAnalysisState identifyAndReplaceSymbolicValuesByValues(ValueAnalysisState pValueAnalysisState, RangeValue pRangeValue) {
+    ValueAnalysisState duplicate = ValueAnalysisState.copyOf((ValueAnalysisState) pValueAnalysisState);
+
+    // fetch all symbolic value in each constants
+    Set<SymbolicIdentifier> symbolicValues = new HashSet<>();
+    SymbolicValues.initialize();
+
+    for (Value v : Iterables.transform(pValueAnalysisState.getConstants(), e -> e.getValue().getValue())) {
+      if (v instanceof SymbolicValue) {
+        symbolicValues.addAll(SymbolicValues.getContainedSymbolicIdentifiers((SymbolicValue) v));
+      }
+    }
+
+    // replace by value from range
+    Iterator<SymbolicIdentifier> iter = symbolicValues.iterator();
+
+    while (iter.hasNext()) {
+      SymbolicIdentifier identifier = iter.next();
+      MemoryLocation m = identifier.getRepresentedLocation().get();
+
+      // get value from constants map and
+      ValueAndType constant = pRangeValue.getVariablesMapFullyQualified().get(m);
+
+      if (constant != null) {
+        // assign constant
+        // TODO remove hardcoded var identifier
+        assignConstantMultipleTimes(duplicate, m.getAsSimpleString(), constant.getValue());
+      }
+    }
+
+    return duplicate;
+  }
+
+  public boolean shouldProcessDeclarationEdge(ADeclarationEdge aDeclarationEdge) {
+    ADeclaration declaration = aDeclarationEdge.getDeclaration();
+
+    if (!(declaration instanceof AVariableDeclaration) || !isTrackedType(declaration.getType())) return false;
+
+    AVariableDeclaration decl = (AVariableDeclaration) aDeclarationEdge.getDeclaration();
+    if (!(decl.getInitializer() instanceof AInitializerExpression)) return false;
+    
+    return true;
+  }
+
   public void assignConstantMultipleTimes(ValueAnalysisState pState, String pVariableName, Value pValue) {
+    pState.assignConstant(pVariableName, pValue);
     for (int i = 0; i<15; i++) {
       pState.assignConstant(pVariableName + "#" + i, pValue);
     }
