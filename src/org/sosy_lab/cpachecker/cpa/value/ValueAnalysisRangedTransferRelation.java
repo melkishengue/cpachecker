@@ -19,6 +19,8 @@
  */
 package org.sosy_lab.cpachecker.cpa.value;
 
+import static org.sosy_lab.cpachecker.util.LiveVariables.LIVE_DECL_EQUIVALENCE;
+
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,6 +32,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.log.LogManager;
 import org.sosy_lab.cpachecker.cfa.CFA;
 import org.sosy_lab.cpachecker.cfa.ast.AAssignment;
@@ -38,6 +42,7 @@ import org.sosy_lab.cpachecker.cfa.ast.AExpression;
 import org.sosy_lab.cpachecker.cfa.ast.AIdExpression;
 import org.sosy_lab.cpachecker.cfa.ast.AInitializerExpression;
 import org.sosy_lab.cpachecker.cfa.ast.ALeftHandSide;
+import org.sosy_lab.cpachecker.cfa.ast.AParameterDeclaration;
 import org.sosy_lab.cpachecker.cfa.ast.ARightHandSide;
 import org.sosy_lab.cpachecker.cfa.ast.AVariableDeclaration;
 import org.sosy_lab.cpachecker.cfa.ast.c.CExpression;
@@ -47,6 +52,8 @@ import org.sosy_lab.cpachecker.cfa.model.AStatementEdge;
 import org.sosy_lab.cpachecker.cfa.model.AssumeEdge;
 import org.sosy_lab.cpachecker.cfa.model.CFAEdge;
 import org.sosy_lab.cpachecker.cfa.model.CFAEdgeType;
+import org.sosy_lab.cpachecker.cfa.model.CFANode;
+import org.sosy_lab.cpachecker.cfa.model.FunctionEntryNode;
 import org.sosy_lab.cpachecker.cfa.types.Type;
 import org.sosy_lab.cpachecker.core.interfaces.AbstractState;
 import org.sosy_lab.cpachecker.core.interfaces.AbstractStateWithAssumptions;
@@ -59,6 +66,7 @@ import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisState.ValueAndType;
 import org.sosy_lab.cpachecker.cpa.value.range.RangeValue;
 import org.sosy_lab.cpachecker.cpa.value.range.RangeValueInterval;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.ConstraintsStrengthenOperator;
+import org.sosy_lab.cpachecker.cpa.value.symbolic.SymbolicValueAssigner;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.type.ConstantSymbolicExpression;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.type.SymbolicIdentifier;
 import org.sosy_lab.cpachecker.cpa.value.symbolic.type.SymbolicValue;
@@ -347,6 +355,34 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
         postProcessedResult.add(pElement);
       } else {
         postProcessedResult.addAll(postProcessing(rawResult, pCfaEdge));
+      }
+    }
+
+    // if entry node, get all parameters and for each create symbolic value if not already created
+    for (AbstractState vaState : postProcessedResult) {
+
+      CFANode node = pCfaEdge.getPredecessor();
+      System.out.println("node = " + node);
+      ExpressionValueVisitor visitor = getVisitor((ValueAnalysisState) vaState);
+
+      try {
+        MemoryLocationValueHandler unknownValueHandler = new SymbolicValueAssigner(
+            Configuration.builder().build());
+
+        if (node instanceof FunctionEntryNode) {
+          FunctionEntryNode entryNode = (FunctionEntryNode) node;
+          for (AParameterDeclaration param : entryNode.getFunctionParameters()) {
+
+            MemoryLocation mem = MemoryLocation.valueOf(param.getQualifiedName());
+            if (((ValueAnalysisState) vaState).getConstants().contains(mem)) {
+              continue;
+            }
+
+            unknownValueHandler.handle(MemoryLocation.valueOf(param.getQualifiedName()), param.getType(), (ValueAnalysisState)vaState, visitor);
+          }
+        }
+      } catch (InvalidConfigurationException e) {
+        break;
       }
     }
 

@@ -1,14 +1,17 @@
 extern void __VERIFIER_error() __attribute__ ((__noreturn__));
 
-int main (int a, int b, int c) {
-	/*int res = 0;
-	int d = 1;
-	int e = 4;*/
+int foo(int x) {
+	return x + 10;
+}
 
-	a = b - 10;
+int main (int a, int b, int c) {
+	int min = 0;
+
+	a = b - c;	
+
 	c = a + 1;
 
-	/*if (a < b) {
+	if (a < b) {
 		a = b - 10;
 		b = a + 5;
 		d = d + e;
@@ -23,7 +26,7 @@ int main (int a, int b, int c) {
 			d = e+2*d;
 			res = b;
 		}
-	} */
+	}
 
 	return a;
 }
