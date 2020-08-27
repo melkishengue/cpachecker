@@ -105,7 +105,7 @@ public class MonitorPrecisionAdjustment implements PrecisionAdjustment {
     // no. of nodes and no. of branches on the path does not change, just update the
       // set the adjusted wrapped element and update the time
     MonitorState resultElement =
-      new MonitorState(unwrapped.abstractState(), updatedTotalTime, preventingCondition);
+      new MonitorState(unwrapped.abstractState(), updatedTotalTime, preventingCondition, element.getStepsOnPath()+1);
 
     return Optional.of(unwrapped.withAbstractState(resultElement));
   }

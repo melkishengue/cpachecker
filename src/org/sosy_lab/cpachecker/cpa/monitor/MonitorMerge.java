@@ -60,8 +60,11 @@ public class MonitorMerge implements MergeOperator {
     long totalTimeOnPath = Math.max(monitorState1.getTotalTimeOnPath(),
                                     monitorState2.getTotalTimeOnPath());
 
+    int stepsOnPath = Math.max(monitorState1.getStepsOnPath(),
+                                    monitorState2.getStepsOnPath());
+
     MonitorState mergedElement = new MonitorState(
-        retElement, totalTimeOnPath);
+        retElement, totalTimeOnPath, stepsOnPath);
 
     return mergedElement;
   }

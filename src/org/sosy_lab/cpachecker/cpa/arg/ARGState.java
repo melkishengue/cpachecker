@@ -379,6 +379,11 @@ public class ARGState extends AbstractSingleWrapperState
   }
 
   @Override
+  public boolean isTargetWithReason(String pReason) {
+    return !hasCoveredParent && !isCovered() && super.isTargetWithReason(pReason);
+  }
+
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     if (destroyed) {

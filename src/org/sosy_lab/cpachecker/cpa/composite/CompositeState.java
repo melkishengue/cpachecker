@@ -44,10 +44,11 @@ import org.sosy_lab.cpachecker.core.interfaces.Partitionable;
 import org.sosy_lab.cpachecker.core.interfaces.Property;
 import org.sosy_lab.cpachecker.core.interfaces.PseudoPartitionable;
 import org.sosy_lab.cpachecker.core.interfaces.Targetable;
+import org.sosy_lab.cpachecker.core.interfaces.TargetableWithReason;
 import org.sosy_lab.cpachecker.cpa.arg.Splitable;
 
 public class CompositeState
-    implements AbstractWrapperState, Targetable, Partitionable, PseudoPartitionable, Serializable,
+    implements AbstractWrapperState, Targetable, TargetableWithReason, Partitionable, PseudoPartitionable, Serializable,
         Graphable, Splitable {
   private static final long serialVersionUID = -5143296331663510680L;
   private final ImmutableList<AbstractState> states;
@@ -67,6 +68,20 @@ public class CompositeState
   public boolean isTarget() {
     for (AbstractState element : states) {
       if ((element instanceof Targetable) && ((Targetable)element).isTarget()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public boolean isTargetWithReason(String pReason) {
+    for (AbstractState element : states) {
+      if (!(element instanceof TargetableWithReason)) {
+        continue;
+      }
+
+      if (((TargetableWithReason)element).isTargetWithReason(pReason)) {
         return true;
       }
     }

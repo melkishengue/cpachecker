@@ -551,39 +551,27 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
         continue;
       }
 
-      BooleanFormula pred = bfmgr.makeVariable(BRANCHING_PREDICATE_NAME + pathElement.getStateId());
+      AssumeEdge assumption = (AssumeEdge) edge;
 
+      BooleanFormula pred = bfmgr.makeVariable(BRANCHING_PREDICATE_NAME + pathElement.getStateId());
 
       Pair<ARGState,CFAEdge> key = Pair.of(pathElement, edge);
       PathFormula pf = parentFormulasOnPath.get(key);
 
-
-
       if(pf == null) {
-        // create formula by edge, be sure to use the correct SSA indices!
-        // TODO the class PathFormulaManagerImpl should not depend on PredicateAbstractState,
-        // it is used without PredicateCPA as well.
         PredicateAbstractState pe = AbstractStates.extractStateByType(pathElement, PredicateAbstractState.class);
-        ValueAnalysisState vaState = AbstractStates.extractStateByType(pathElement, ValueAnalysisState.class);
-        AssumeEdge assumeEdge = (AssumeEdge)edge;
-        AExpression expression = assumeEdge.getExpression();
-        System.out.println("expression = " + expression);
-        
-        System.out.println("vaState = " + vaState);
+
+        // System.out.println("vaState = " + vaState);
         if (pe == null) {
           logger.log(Level.WARNING, "Cannot find precise error path information without PredicateCPA");
           return bfmgr.makeTrue();
         } else {
           pf = pe.getPathFormula();
         }
-        pf = this.makeEmptyPathFormula(pf); // reset everything except SSAMap
-        pf = this.makeAnd(pf, edge);        // conjunct with edge
-
       }
-      BooleanFormula equiv = bfmgr.equivalence(pred, pf.getFormula());
-      System.out.println("pf = " + pf.getFormula());
       branchingFormula.add(pf.getFormula());
     }
+
     return bfmgr.and(branchingFormula);
   }
 

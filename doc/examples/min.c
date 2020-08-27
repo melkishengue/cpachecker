@@ -1,9 +1,15 @@
 extern void __VERIFIER_error() __attribute__ ((__noreturn__));
 
-int min (int a, int b, int c) {
+int main (int a, int b, int c) {
 	int min = 0;
 
-		// ERROR: __VERIFIER_error();
+	// ERROR: __VERIFIER_error();
+	a = a+2; // 2
+
+	// a = b - c; // 
+	b = b*2; // 2
+
+	c = c + 1; // -1
 
 	if (a < b) {
 		if (b < c) {

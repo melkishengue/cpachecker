@@ -130,6 +130,11 @@ public class CoreComponentsFactory {
   @Option(secure=true, description="use a second model checking run (e.g., with CBMC or a different CPAchecker configuration) to double-check counter-examples")
   private boolean checkCounterexamples = false;
 
+  @Option(secure=true, description="Generate a path range of visited paths when timeout exception through MonitorCPA occurs")
+  private boolean generateRangeAfterTimeout = false;
+
+
+
   @Option(secure = true, description = "use counterexample check and the BDDCPA Restriction option")
   private boolean checkCounterexamplesWithBDDCPARestriction = false;
 
@@ -471,6 +476,12 @@ public class CoreComponentsFactory {
                 aggregatedReachedSets);
       }
 
+      if (generateRangeAfterTimeout) {
+        algorithm =
+            new GeneratePathrangeAlgorithm(
+                algorithm, cpa, config, specification, logger, shutdownNotifier, cfa);
+      }
+
       if (checkCounterexamples) {
         if (cpa instanceof BAMCPA) {
           algorithm =
@@ -482,10 +493,6 @@ public class CoreComponentsFactory {
                   algorithm, cpa, config, specification, logger, shutdownNotifier, cfa);
         }
       }
-
-      algorithm =
-          new GeneratePathrangeAlgorithm(
-              algorithm, cpa, config, specification, logger, shutdownNotifier, cfa);
 
       algorithm =
           ExceptionHandlingAlgorithm.create(

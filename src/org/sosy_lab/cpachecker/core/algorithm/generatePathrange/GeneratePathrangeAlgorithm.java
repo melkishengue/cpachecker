@@ -24,33 +24,23 @@
 package org.sosy_lab.cpachecker.core.algorithm.generatePathrange;
 
 import static com.google.common.collect.FluentIterable.from;
-import static org.sosy_lab.common.collect.Collections3.transformedImmutableListCopy;
 import static org.sosy_lab.cpachecker.core.algorithm.bmc.BMCHelper.filterAncestors;
-import static org.sosy_lab.cpachecker.cpa.arg.ARGUtils.getAllStatesOnPathsTo;
-import static org.sosy_lab.cpachecker.util.AbstractStates.IS_TARGET_STATE;
-import static org.sosy_lab.cpachecker.util.statistics.StatisticsUtils.toPercent;
+import static org.sosy_lab.cpachecker.util.AbstractStates.IS_TARGET_STATE_REASON_TIMEOUT;
 
-import com.google.common.base.Predicates;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.logging.Level;
 import org.sosy_lab.common.ShutdownNotifier;
-import org.sosy_lab.common.collect.PersistentMap;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -58,12 +48,6 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.LogManager;
 import org.sosy_lab.common.time.Timer;
 import org.sosy_lab.cpachecker.cfa.CFA;
-import org.sosy_lab.cpachecker.cfa.ast.AExpression;
-import org.sosy_lab.cpachecker.cfa.ast.c.CExpression;
-import org.sosy_lab.cpachecker.cfa.model.AssumeEdge;
-import org.sosy_lab.cpachecker.cfa.model.CFAEdge;
-import org.sosy_lab.cpachecker.cfa.types.MachineModel;
-import org.sosy_lab.cpachecker.core.AnalysisDirection;
 import org.sosy_lab.cpachecker.core.CPAcheckerResult.Result;
 import org.sosy_lab.cpachecker.core.Specification;
 import org.sosy_lab.cpachecker.core.algorithm.Algorithm;
@@ -74,11 +58,8 @@ import org.sosy_lab.cpachecker.core.algorithm.bmc.ProverEnvironmentWithFallback;
 import org.sosy_lab.cpachecker.core.algorithm.counterexamplecheck.CBMCChecker;
 import org.sosy_lab.cpachecker.core.algorithm.counterexamplecheck.ConcretePathExecutionChecker;
 import org.sosy_lab.cpachecker.core.algorithm.counterexamplecheck.CounterexampleCPAchecker;
-import org.sosy_lab.cpachecker.core.algorithm.counterexamplecheck.CounterexampleCheckAlgorithm;
-import org.sosy_lab.cpachecker.core.algorithm.generatePathrange.GeneratePathrangeAlgorithm.CounterexampleCheckerType;
 import org.sosy_lab.cpachecker.core.algorithm.counterexamplecheck.CounterexampleChecker;
 import org.sosy_lab.cpachecker.core.counterexample.AssumptionToEdgeAllocator;
-import org.sosy_lab.cpachecker.core.counterexample.CounterexampleInfo;
 import org.sosy_lab.cpachecker.core.interfaces.AbstractState;
 import org.sosy_lab.cpachecker.core.interfaces.ConfigurableProgramAnalysis;
 import org.sosy_lab.cpachecker.core.interfaces.Statistics;
@@ -88,35 +69,20 @@ import org.sosy_lab.cpachecker.core.reachedset.UnmodifiableReachedSet;
 import org.sosy_lab.cpachecker.cpa.arg.ARGCPA;
 import org.sosy_lab.cpachecker.cpa.arg.ARGState;
 import org.sosy_lab.cpachecker.cpa.arg.ARGUtils;
-import org.sosy_lab.cpachecker.cpa.arg.path.ARGPath;
 import org.sosy_lab.cpachecker.cpa.bam.BAMCPA;
-import org.sosy_lab.cpachecker.cpa.predicate.PredicateAbstractState;
-import org.sosy_lab.cpachecker.cpa.predicate.PredicateAbstractionManager;
+import org.sosy_lab.cpachecker.cpa.location.LocationState;
 import org.sosy_lab.cpachecker.cpa.predicate.PredicateCPA;
-import org.sosy_lab.cpachecker.cpa.predicate.SlicingAbstractionsUtils;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisState;
-import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisState.ValueAndType;
 import org.sosy_lab.cpachecker.cpa.value.range.RangeUtils;
-import org.sosy_lab.cpachecker.cpa.value.range.RangeValue;
-import org.sosy_lab.cpachecker.cpa.value.symbolic.util.SymbolicValues;
 import org.sosy_lab.cpachecker.exceptions.CPAException;
 import org.sosy_lab.cpachecker.exceptions.CPATransferException;
-import org.sosy_lab.cpachecker.exceptions.InfeasibleCounterexampleException;
-import org.sosy_lab.cpachecker.exceptions.UnrecognizedCodeException;
 import org.sosy_lab.cpachecker.util.AbstractStates;
 import org.sosy_lab.cpachecker.util.CPAs;
-import org.sosy_lab.cpachecker.util.predicates.PathChecker;
-import org.sosy_lab.cpachecker.util.predicates.interpolation.CounterexampleTraceInfo;
-import org.sosy_lab.cpachecker.util.predicates.pathformula.PathFormula;
 import org.sosy_lab.cpachecker.util.predicates.pathformula.PathFormulaManager;
-import org.sosy_lab.cpachecker.util.predicates.pathformula.PathFormulaManagerImpl;
-import org.sosy_lab.cpachecker.util.predicates.pathformula.ctoformula.ExpressionToFormulaVisitor;
 import org.sosy_lab.cpachecker.util.predicates.smt.BooleanFormulaManagerView;
 import org.sosy_lab.cpachecker.util.predicates.smt.FormulaManagerView;
 import org.sosy_lab.cpachecker.util.predicates.smt.Solver;
-import org.sosy_lab.cpachecker.util.states.MemoryLocation;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.Model.ValueAssignment;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
@@ -179,8 +145,6 @@ public class GeneratePathrangeAlgorithm
     pmgr = predCpa.getPathFormulaManager();
     pProver = new ProverEnvironmentWithFallback(solver, ProverOptions.GENERATE_MODELS);
 
-    System.out.println("creating generate algorithm.");
-
     if (!(pCpa instanceof ARGCPA || pCpa instanceof BAMCPA)) {
       throw new InvalidConfigurationException("ARG CPA needed for counterexample check");
     }
@@ -218,39 +182,51 @@ public class GeneratePathrangeAlgorithm
     status = status.update(algorithm.run(reached));
     assert ARGUtils.checkARG(reached);
 
-    final List<ARGState> errorStates =
+    Set<ARGState> targetStates =
         from(reached)
             .transform(AbstractStates.toState(ARGState.class))
-            .filter(AbstractStates.IS_TARGET_STATE)
+            .filter(AbstractStates.IS_TARGET_STATE_REASON_TIMEOUT)
             // .filter(Predicates.not(Predicates.in(checkedTargetStates)))
-            .toList();
+            .toSet();
 
+    Set<ARGState> redundantStates = filterAncestors(targetStates, IS_TARGET_STATE_REASON_TIMEOUT);
+    redundantStates.forEach(state -> {
+      state.removeFromARG();
+    });
+    reached.removeAll(redundantStates);
+    targetStates = Sets.difference(targetStates, redundantStates);
 
-    // ARGState errorState = errorStates.size() == 2 ? errorStates.get(0).getParents().iterator().next() :
-
-    System.out.println("errorStates = " + errorStates);
-
-
-    if (errorStates.size() == 0) {
-      System.out.println("No error states could be found. Aborting path range generation.");
-      return status;
+    if (targetStates.size() == 0) {
+      System.out.println("Timeout did not occur. Generating path range based on last visited state.");
+      targetStates = new HashSet<ARGState>();
+      targetStates.add((ARGState) reached.getLastState());
     }
 
-    /*ValueAnalysisState vaState = AbstractStates.extractStateByType(errorStates.get(0), ValueAnalysisState.class);
-    if (vaState == null) {
-      System.out.println("Value Analysis state could not be found. Aborting analysis.");
-      return status;
-    }*/
-
-    // check counterexample
     checkTime.start();
     try {
-      List<ValueAssignment> model = constructModelAssignment(reached);
+      List<ValueAssignment> model = constructModelAssignment(targetStates);
 
+      ArrayList<ValueAssignment> modelCopy = new ArrayList(model);
+
+      Collections.sort(modelCopy, new Comparator<ValueAssignment>(){
+        public int compare(ValueAssignment va1, ValueAssignment va2){
+          return va1.getName().compareTo(va2.getName());
+        }
+      });
+
+      ArrayList<String> foundModelChunks = new ArrayList();
       ArrayList rangeChunksList = new ArrayList<String>();
-      for(ValueAssignment va : model) {
+      for(ValueAssignment va : modelCopy) {
+
         String[] arr = va.getName().split("@", 2);
         String varName = arr[0];
+
+        if (foundModelChunks.contains(varName)) {
+          continue;
+        }
+
+        foundModelChunks.add(varName);
+
         // if ((arr.length > 1) && (variableExistsAndIsSymbolic(vaState, varName))) {
         if (arr.length > 1) {
           rangeChunksList.add(varName + "=" + va.getValue());
@@ -263,10 +239,13 @@ public class GeneratePathrangeAlgorithm
         range = "(" + range + ")";
       }
       // using the range from the rootstate to define the end range of the generated interval -  this only works in case of a single function
-      ARGState rootState = getRootState(errorStates.get(0));
-      // System.out.println("rootState = " + rootState);
 
+
+      /*ARGState rootState = getRootState(targetStates.iterator().next());
       ValueAnalysisState rootVAState = AbstractStates.extractStateByType(rootState, ValueAnalysisState.class);
+      String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();*/
+
+      ValueAnalysisState rootVAState = AbstractStates.extractStateByType(reached.getFirstState(), ValueAnalysisState.class);
       String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
 
       range = "[" + range + ", " + rootStateEndRange + "]";
@@ -296,29 +275,23 @@ public class GeneratePathrangeAlgorithm
    * @param errorState where the counterexample ends
    * @param reached all reached states of the analysis, some of the states are part of the CEX path
    */
-  public List<ValueAssignment> constructModelAssignment(ReachedSet pReachedSet) throws InterruptedException, CPATransferException {
-    Set<ARGState> targetStates = from(pReachedSet).filter(IS_TARGET_STATE).filter(ARGState.class).toSet();
-    List<ValueAssignment> model = new ArrayList<>();
-
-    Set<ARGState> redundantStates = filterAncestors(targetStates, IS_TARGET_STATE);
-    redundantStates.forEach(state -> {
-      state.removeFromARG();
-    });
-    pReachedSet.removeAll(redundantStates);
-    targetStates = Sets.difference(targetStates, redundantStates);
-
+  public List<ValueAssignment> constructModelAssignment(Set<ARGState> targetStates) throws InterruptedException, CPATransferException {
       final boolean shouldCheckBranching = true;
       if (shouldCheckBranching) {
-        // Set<ARGState> arg = from(pReachedSet).filter(ARGState.class).toSet();
-        // Set<ARGState> arg = getAllStatesOnPathsTo(argPath.getLastState());
+        // TODO is it enough to consider only the first target state ?
+        // thte first one is the left most target state. So the other target states will be ignored here
+        // but included in the output range and later on processed by other analysis
         ARGState errorState = targetStates.iterator().next();
+        // get parent of target state
+        errorState = errorState.getParents().iterator().next();
+        LocationState loc = AbstractStates.extractStateByType(errorState, LocationState.class);
+        System.out.println("-----------------------------------------------------------------------------");
+        System.out.println("Generating path range for location " + loc);
         Set<ARGState> statesOnErrorPath = ARGUtils.getAllStatesOnPathsTo(errorState);
-
-        // System.out.println("statesOnErrorPath = " + statesOnErrorPath);
 
         // get the branchingFormula
         // this formula contains predicates for all branches we took
-        // this way we can figure out which branches make a feasible path
+        // using this we can compute which input values would make the program follow that path
         BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath);
 
         if (bfmgr.isTrue(branchingFormula)) {
@@ -330,7 +303,9 @@ public class GeneratePathrangeAlgorithm
         pProver.push(branchingFormula);
       }
 
-      try {
+
+    List<ValueAssignment> model = new ArrayList();
+    try {
         // need to ask solver for satisfiability again,
         // otherwise model doesn't contain new predicates
         boolean stillSatisfiable = !pProver.isUnsat();

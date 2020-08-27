@@ -62,7 +62,7 @@ public class MonitorCPA extends AbstractSingleWrapperCPA {
 
   @Override
   public AbstractState getInitialState(CFANode pNode, StateSpacePartition pPartition) throws InterruptedException {
-    return new MonitorState(getWrappedCpa().getInitialState(pNode, pPartition), 0L);
+    return new MonitorState(getWrappedCpa().getInitialState(pNode, pPartition), 0L, 0);
   }
 
   @Override

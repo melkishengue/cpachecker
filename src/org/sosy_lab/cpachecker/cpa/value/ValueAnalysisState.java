@@ -638,6 +638,12 @@ public final class ValueAnalysisState
     FloatingPointFormulaManagerView floatFMGR = manager.getFloatingPointFormulaManager();
 
     for (Entry<MemoryLocation, ValueAndType> entry : constantsMap.entrySet()) {
+      boolean valueIsExplicitelyKnown = entry.getValue().getValue().isExplicitlyKnown();
+
+      if (!valueIsExplicitelyKnown) {
+        continue;
+      }
+
       NumericValue num = entry.getValue().getValue().asNumericValue();
 
       if (num != null) {

@@ -103,7 +103,6 @@ public class CounterexampleCheckAlgorithm
       CFA cfa)
       throws InvalidConfigurationException {
 
-    System.out.println("Adding CounterexampleCheckAlgorithm");
     this.algorithm = algorithm;
     this.logger = logger;
     config.inject(this, CounterexampleCheckAlgorithm.class);

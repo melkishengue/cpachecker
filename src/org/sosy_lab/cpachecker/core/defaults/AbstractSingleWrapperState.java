@@ -39,13 +39,14 @@ import java.io.Serializable;
 import java.util.Set;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.sosy_lab.cpachecker.core.interfaces.TargetableWithReason;
 
 /**
  * Base class for AbstractStates which wrap the abstract state of exactly
  * one CPA.
  */
 public abstract class AbstractSingleWrapperState
-    implements AbstractWrapperState, Targetable, Partitionable, PseudoPartitionable, Serializable {
+    implements AbstractWrapperState, Targetable, TargetableWithReason, Partitionable, PseudoPartitionable, Serializable {
 
   private static final long serialVersionUID = -332757795984736107L;
 
@@ -69,6 +70,15 @@ public abstract class AbstractSingleWrapperState
   public boolean isTarget() {
     if (wrappedState instanceof Targetable) {
       return ((Targetable)wrappedState).isTarget();
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isTargetWithReason(String pReason) {
+    if (wrappedState instanceof TargetableWithReason) {
+      return ((TargetableWithReason)wrappedState).isTargetWithReason(pReason);
     } else {
       return false;
     }

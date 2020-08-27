@@ -73,6 +73,9 @@ public class MonitorTransferRelation extends SingleEdgeTransferRelation {
       min=0)
   private long timeLimitForPath = 0;
 
+  @Option(secure=true, name="pathcomputationlengthlimit", description="maximum number of steps of exploring the CFA")
+  private long stepsLimitForPath = 0;
+
   private final TransferRelation transferRelation;
 
   private final ExecutorService executor;
@@ -155,6 +158,7 @@ public class MonitorTransferRelation extends SingleEdgeTransferRelation {
     totalTimeOfTransfer.stop();
     long timeOfExecution = totalTimeOfTransfer.getLengthOfLastInterval().asMillis();
     long totalTimeOnPath = element.getTotalTimeOnPath() + timeOfExecution;
+    int stepsOnPath = element.getStepsOnPath() + 1;
 
     if (totalTimeOnPath > maxTotalTimeForPath) {
       maxTotalTimeForPath = totalTimeOnPath;
@@ -165,8 +169,13 @@ public class MonitorTransferRelation extends SingleEdgeTransferRelation {
       return ImmutableSet.of();
     }
 
+    System.out.println("totalTimeOnPath = " + totalTimeOnPath);
+    System.out.println("timeLimitForPath = " + timeLimitForPath);
+    System.out.println("stepsOnPath = " + stepsOnPath);
+    System.out.println("stepsLimitForPath = " + stepsLimitForPath);
+
     // check for violation of limits
-    if (preventingCondition == null && timeLimitForPath > 0 && totalTimeOnPath > timeLimitForPath) {
+    if ((preventingCondition == null && timeLimitForPath > 0 && totalTimeOnPath > timeLimitForPath) || (stepsLimitForPath > 0 && stepsOnPath >= stepsLimitForPath)) {
       System.out.println("Generating timeout state because " + totalTimeOnPath + " is bigger than " + timeLimitForPath);
       successors = Collections.singleton(TimeoutState.INSTANCE);
         preventingCondition = Pair.of(PreventingHeuristic.PATHCOMPTIME, timeLimitForPath);
@@ -176,7 +185,7 @@ public class MonitorTransferRelation extends SingleEdgeTransferRelation {
     ImmutableList.Builder<MonitorState> wrappedSuccessors =
         ImmutableList.builderWithExpectedSize(successors.size());
     for (AbstractState absElement : successors) {
-      MonitorState successorElem = new MonitorState(absElement, totalTimeOnPath, preventingCondition);
+      MonitorState successorElem = new MonitorState(absElement, totalTimeOnPath, preventingCondition, stepsOnPath);
 
       wrappedSuccessors.add(successorElem);
     }
@@ -242,6 +251,7 @@ public class MonitorTransferRelation extends SingleEdgeTransferRelation {
     totalTimeOfTransfer.stop();
     long timeOfExecution = totalTimeOfTransfer.getLengthOfLastInterval().asMillis();
     long totalTimeOnPath = element.getTotalTimeOnPath() + timeOfExecution;
+    int stepsOnPath = element.getStepsOnPath() + 1;
 
     if (totalTimeOnPath > maxTotalTimeForPath) {
       maxTotalTimeForPath = totalTimeOnPath;
@@ -272,7 +282,7 @@ public class MonitorTransferRelation extends SingleEdgeTransferRelation {
         ImmutableList.builderWithExpectedSize(successors.size());
     for (AbstractState absElement : successors) {
       MonitorState successorElem = new MonitorState(
-          absElement, totalTimeOnPath, preventingCondition);
+          absElement, totalTimeOnPath, preventingCondition, stepsOnPath);
 
       wrappedSuccessors.add(successorElem);
     }

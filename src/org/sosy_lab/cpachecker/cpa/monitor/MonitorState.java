@@ -26,13 +26,10 @@ package org.sosy_lab.cpachecker.cpa.monitor;
 import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.io.NotSerializableException;
-import java.util.HashSet;
-import java.util.Set;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.sosy_lab.cpachecker.core.defaults.AbstractSingleWrapperState;
 import org.sosy_lab.cpachecker.core.interfaces.AbstractState;
-import org.sosy_lab.cpachecker.core.interfaces.Property;
-import org.sosy_lab.cpachecker.core.interfaces.Targetable;
+import org.sosy_lab.cpachecker.core.interfaces.TargetableWithReason;
 import org.sosy_lab.cpachecker.core.interfaces.conditions.AvoidanceReportingState;
 import org.sosy_lab.cpachecker.util.Pair;
 import org.sosy_lab.cpachecker.util.assumptions.PreventingHeuristic;
@@ -57,17 +54,12 @@ public class MonitorState extends AbstractSingleWrapperState implements Avoidanc
     throw new NotSerializableException();
   }
 
-  static enum TimeoutState implements AbstractState, Targetable {
+  static enum TimeoutState implements AbstractState, TargetableWithReason {
     INSTANCE;
 
     @Override
-    public boolean isTarget() {
-      return true;
-    }
-
-    @Override
-    public Set<Property> getViolatedProperties() throws IllegalStateException {
-      return new HashSet<Property>();
+    public boolean isTargetWithReason(String pReason) {
+      return pReason == "TIMEOUT";
     }
 
     @Override
@@ -79,16 +71,18 @@ public class MonitorState extends AbstractSingleWrapperState implements Avoidanc
   /// The total time spent on this path
   private final long totalTimeOnPath;
 
+  private final int stepsOnPath;
+
   /// The cause why the analysis did not proceed after this state (may be null)
   @Nullable
   private final Pair<PreventingHeuristic, Long> preventingCondition;
 
-  protected MonitorState(AbstractState pWrappedState, long totalTimeOnPath) {
-    this(pWrappedState, totalTimeOnPath, null);
+  protected MonitorState(AbstractState pWrappedState, long totalTimeOnPath, int stepsOnPath) {
+    this(pWrappedState, totalTimeOnPath, null, stepsOnPath);
   }
 
   protected MonitorState(AbstractState pWrappedState, long totalTimeOnPath,
-      Pair<PreventingHeuristic, Long> preventingCondition) {
+      Pair<PreventingHeuristic, Long> preventingCondition, int stepsOnPath) {
 
     super(pWrappedState);
 
@@ -98,11 +92,15 @@ public class MonitorState extends AbstractSingleWrapperState implements Avoidanc
         "Need a preventingCondition in case of TimeoutState");
 
     this.totalTimeOnPath = totalTimeOnPath;
+    this.stepsOnPath = stepsOnPath;
     this.preventingCondition = preventingCondition; // may be null
   }
 
   public long getTotalTimeOnPath() {
     return totalTimeOnPath;
+  }
+  public int getStepsOnPath() {
+    return stepsOnPath;
   }
 
   @Override
@@ -137,8 +135,9 @@ public class MonitorState extends AbstractSingleWrapperState implements Avoidanc
 
   @Override
   public String toString() {
-    return String.format("Total time: %s Wrapped elem: %s",
-        this.totalTimeOnPath, getWrappedStates());
+    return String.format("Total time: %s, steps on path: %s, Wrapped elem: %s",
+        this.totalTimeOnPath,
+        this.stepsOnPath, getWrappedStates());
   }
 
   @Override

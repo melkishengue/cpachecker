@@ -46,6 +46,7 @@ import org.sosy_lab.cpachecker.core.interfaces.AbstractStateWithLocations;
 import org.sosy_lab.cpachecker.core.interfaces.AbstractWrapperState;
 import org.sosy_lab.cpachecker.core.interfaces.FormulaReportingState;
 import org.sosy_lab.cpachecker.core.interfaces.Targetable;
+import org.sosy_lab.cpachecker.core.interfaces.TargetableWithReason;
 import org.sosy_lab.cpachecker.core.reachedset.LocationMappedReachedSet;
 import org.sosy_lab.cpachecker.core.reachedset.UnmodifiableReachedSet;
 import org.sosy_lab.cpachecker.cpa.assumptions.storage.AssumptionStorageState;
@@ -179,11 +180,17 @@ public final class AbstractStates {
     return (as instanceof Targetable) && ((Targetable)as).isTarget();
   }
 
+  public static boolean isTargetStateWithReasonTimeout(AbstractState as) {
+    return (as instanceof TargetableWithReason) && ((TargetableWithReason)as).isTargetWithReason("TIMEOUT");
+  }
+
   public static FluentIterable<AbstractState> getTargetStates(final UnmodifiableReachedSet pReachedSet) {
     return from(pReachedSet).filter(AbstractStates.IS_TARGET_STATE);
   }
 
   public static final Predicate<AbstractState> IS_TARGET_STATE = AbstractStates::isTargetState;
+
+  public static final Predicate<AbstractState> IS_TARGET_STATE_REASON_TIMEOUT = AbstractStates::isTargetStateWithReasonTimeout;
 
   public static boolean hasAssumptions(AbstractState as) {
     AssumptionStorageState assumption = extractStateByType(as, AssumptionStorageState.class);

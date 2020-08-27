@@ -46,6 +46,8 @@ public class LocationTransferRelation implements TransferRelation {
   public Collection<LocationState> getAbstractSuccessorsForEdge(
       AbstractState element, Precision prec, CFAEdge cfaEdge) {
 
+    System.out.println("element = " + element);
+
     CFANode node = ((LocationState) element).getLocationNode();
 
     if (CFAUtils.allLeavingEdges(node).contains(cfaEdge)) {
@@ -58,6 +60,8 @@ public class LocationTransferRelation implements TransferRelation {
   @Override
   public Collection<LocationState> getAbstractSuccessors(AbstractState element,
       Precision prec) throws CPATransferException {
+
+    System.out.println("element = " + element);
 
     CFANode node = ((LocationState) element).getLocationNode();
     return CFAUtils.successorsOf(node).transform(n -> factory.getState(n)).toList();
