@@ -4,14 +4,14 @@ int main (int a, int b, int c) {
 	int min = 0;
 
 	// ERROR: __VERIFIER_error();
-	a = a+2; // 2
+	a = a+2; // 
 
 	// a = b - c; // 
-	b = b*2; // 2
+	b = b*2; // 0
 
-	c = c + 1; // -1
+	c = c + 1; // 4
 
-	if (a < b) {
+	if (a < b) { // a+2<b*2
 		if (b < c) {
 			min = a;
 		} else {

@@ -35,11 +35,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -69,6 +72,7 @@ import org.sosy_lab.cpachecker.core.reachedset.UnmodifiableReachedSet;
 import org.sosy_lab.cpachecker.cpa.arg.ARGCPA;
 import org.sosy_lab.cpachecker.cpa.arg.ARGState;
 import org.sosy_lab.cpachecker.cpa.arg.ARGUtils;
+import org.sosy_lab.cpachecker.cpa.arg.path.ARGPath;
 import org.sosy_lab.cpachecker.cpa.bam.BAMCPA;
 import org.sosy_lab.cpachecker.cpa.location.LocationState;
 import org.sosy_lab.cpachecker.cpa.predicate.PredicateCPA;
@@ -179,93 +183,100 @@ public class GeneratePathrangeAlgorithm
   public AlgorithmStatus run(ReachedSet reached) throws CPAException, InterruptedException {
     AlgorithmStatus status = AlgorithmStatus.SOUND_AND_PRECISE;
 
-    status = status.update(algorithm.run(reached));
-    assert ARGUtils.checkARG(reached);
+    while (reached.hasWaitingState()) {
+      status = status.update(algorithm.run(reached));
+      assert ARGUtils.checkARG(reached);
 
-    Set<ARGState> targetStates =
-        from(reached)
-            .transform(AbstractStates.toState(ARGState.class))
-            .filter(AbstractStates.IS_TARGET_STATE_REASON_TIMEOUT)
-            // .filter(Predicates.not(Predicates.in(checkedTargetStates)))
-            .toSet();
+      Set<ARGState> targetStates =
+          from(reached)
+              .transform(AbstractStates.toState(ARGState.class))
+              .filter(AbstractStates.IS_TARGET_STATE_REASON_TIMEOUT)
+              // .filter(Predicates.not(Predicates.in(checkedTargetStates)))
+              .toSet();
 
-    Set<ARGState> redundantStates = filterAncestors(targetStates, IS_TARGET_STATE_REASON_TIMEOUT);
-    redundantStates.forEach(state -> {
-      state.removeFromARG();
-    });
-    reached.removeAll(redundantStates);
-    targetStates = Sets.difference(targetStates, redundantStates);
-
-    if (targetStates.size() == 0) {
-      System.out.println("Timeout did not occur. Generating path range based on last visited state.");
-      targetStates = new HashSet<ARGState>();
-      targetStates.add((ARGState) reached.getLastState());
-    }
-
-    checkTime.start();
-    try {
-      List<ValueAssignment> model = constructModelAssignment(targetStates);
-
-      ArrayList<ValueAssignment> modelCopy = new ArrayList(model);
-
-      Collections.sort(modelCopy, new Comparator<ValueAssignment>(){
-        public int compare(ValueAssignment va1, ValueAssignment va2){
-          return va1.getName().compareTo(va2.getName());
-        }
+      Set<ARGState> redundantStates = filterAncestors(targetStates, IS_TARGET_STATE_REASON_TIMEOUT);
+      redundantStates.forEach(state -> {
+        state.removeFromARG();
       });
+      reached.removeAll(redundantStates);
+      targetStates = Sets.difference(targetStates, redundantStates);
 
-      ArrayList<String> foundModelChunks = new ArrayList();
-      ArrayList rangeChunksList = new ArrayList<String>();
-      for(ValueAssignment va : modelCopy) {
+      ARGState targetState;
+      boolean didTimeoutOccur = targetStates.size() != 0;
 
-        String[] arr = va.getName().split("@", 2);
-        String varName = arr[0];
 
-        if (foundModelChunks.contains(varName)) {
-          continue;
+      checkTime.start();
+      try {
+        List<ValueAssignment> model;
+        if (didTimeoutOccur) {
+          model = constructModelAssignment(targetStates.iterator().next().getParents().iterator().next());
+        } else {
+          // targetState = (ARGState) reached.getLastState();
+          Set<ARGState> statesOnLastPath = new HashSet();
+
+          Map<Integer, Boolean> branchingInformation = new HashMap<>();
+          for(AbstractState abs : reached) {
+            branchingInformation.put(((ARGState) abs).getStateId(), true);
+          }
+
+          Set<ARGState> castedReached =
+              from(reached)
+                  .transform(AbstractStates.toState(ARGState.class))
+                  .toSet();
+
+          ARGPath path = ARGUtils.getPathFromBranchingInformation((ARGState)reached.getFirstState(), castedReached, branchingInformation, false);
+          statesOnLastPath = path.getStateSet();
+          System.out.println("Timeout did not occur. Generating path range based on last visited state.");
+
+          model = constructModelAssignment(statesOnLastPath);
         }
 
-        foundModelChunks.add(varName);
+        System.out.println("model = " + model);
 
-        // if ((arr.length > 1) && (variableExistsAndIsSymbolic(vaState, varName))) {
-        if (arr.length > 1) {
-          rangeChunksList.add(varName + "=" + va.getValue());
+        ArrayList<ValueAssignment> modelCopy = new ArrayList(model);
+
+        Collections.sort(modelCopy, new Comparator<ValueAssignment>(){
+          public int compare(ValueAssignment va1, ValueAssignment va2){
+            return va1.getName().compareTo(va2.getName());
+          }
+        });
+
+        ArrayList<String> foundModelChunks = new ArrayList();
+        ArrayList rangeChunksList = new ArrayList<String>();
+        for(ValueAssignment va : modelCopy) {
+
+          String[] arr = va.getName().split("@", 2);
+          String varName = arr[0];
+
+          if (foundModelChunks.contains(varName)) {
+            continue;
+          }
+
+          foundModelChunks.add(varName);
+
+          if (arr.length > 1) {
+            rangeChunksList.add(varName + "=" + va.getValue());
+          }
         }
+
+        String range = "null";
+        if ((rangeChunksList.size() > 0)) {
+          range = String.join(" ", rangeChunksList);
+          range = "(" + range + ")";
+        }
+
+        ValueAnalysisState rootVAState = AbstractStates.extractStateByType(reached.getFirstState(), ValueAnalysisState.class);
+        String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
+
+        range = "[" + range + ", " + rootStateEndRange + "]";
+        System.out.println("range: " + range);
+        RangeUtils.saveRangeToFile("output/pathrange.txt", range);
+      } finally {
+        checkTime.stop();
       }
-
-      String range = "null";
-      if ((rangeChunksList.size() > 0)) {
-        range = String.join(" ", rangeChunksList);
-        range = "(" + range + ")";
-      }
-      // using the range from the rootstate to define the end range of the generated interval -  this only works in case of a single function
-
-
-      /*ARGState rootState = getRootState(targetStates.iterator().next());
-      ValueAnalysisState rootVAState = AbstractStates.extractStateByType(rootState, ValueAnalysisState.class);
-      String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();*/
-
-      ValueAnalysisState rootVAState = AbstractStates.extractStateByType(reached.getFirstState(), ValueAnalysisState.class);
-      String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
-
-      range = "[" + range + ", " + rootStateEndRange + "]";
-      System.out.println("range: " + range);
-      RangeUtils.saveRangeToFile("output/pathrange.txt", range);
-    } finally {
-      checkTime.stop();
     }
 
     return status;
-  }
-
-  private boolean variableExistsAndIsSymbolic (ValueAnalysisState vaState, String varName) {
-    return true;
-    /*for (Entry<MemoryLocation, ValueAndType> e : vaState.getConstants()) {
-      final MemoryLocation memloc = e.getKey();
-      final ValueAndType valueAndType = e.getValue();
-
-      if ((memloc.getIdentifier() == varName ) && (valueAndType.getType().))
-    }*/
   }
 
   /**
@@ -275,66 +286,61 @@ public class GeneratePathrangeAlgorithm
    * @param errorState where the counterexample ends
    * @param reached all reached states of the analysis, some of the states are part of the CEX path
    */
-  public List<ValueAssignment> constructModelAssignment(Set<ARGState> targetStates) throws InterruptedException, CPATransferException {
-      final boolean shouldCheckBranching = true;
-      if (shouldCheckBranching) {
-        // TODO is it enough to consider only the first target state ?
-        // thte first one is the left most target state. So the other target states will be ignored here
-        // but included in the output range and later on processed by other analysis
-        ARGState errorState = targetStates.iterator().next();
-        // get parent of target state
-        errorState = errorState.getParents().iterator().next();
-        LocationState loc = AbstractStates.extractStateByType(errorState, LocationState.class);
-        System.out.println("-----------------------------------------------------------------------------");
-        System.out.println("Generating path range for location " + loc);
-        Set<ARGState> statesOnErrorPath = ARGUtils.getAllStatesOnPathsTo(errorState);
+  public List<ValueAssignment> constructModelAssignment(ARGState targetState) throws InterruptedException, CPATransferException {
+    // TODO is it enough to consider only the first target state ?
+    // thte first one is the left most target state. So the other target states will be ignored here
+    // but included in the output range and later on processed by other analysis
+    // get parent of target state
+    LocationState loc = AbstractStates.extractStateByType(targetState, LocationState.class);
+    System.out.println("-----------------------------------------------------------------------------");
+    System.out.println("Generating path range for location " + loc);
+    Set<ARGState> statesOnErrorPath = ARGUtils.getAllStatesOnPathsTo(targetState);
+    return constructModelAssignment(statesOnErrorPath);
+  }
 
-        // get the branchingFormula
-        // this formula contains predicates for all branches we took
-        // using this we can compute which input values would make the program follow that path
-        BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath);
+  public List<ValueAssignment> constructModelAssignment(Set<ARGState> statesOnErrorPath) throws InterruptedException, CPATransferException {
+    displayPath(statesOnErrorPath);
 
-        if (bfmgr.isTrue(branchingFormula)) {
-          logger.log(Level.WARNING, "Could not create error path because of missing branching information!");
-          // return;
-        }
+    // get the branchingFormula
+    // this formula contains predicates for all branches we took
+    // using this we can compute which input values would make the program follow that path
+    BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath);
 
-        // add formula to solver environment
-        pProver.push(branchingFormula);
-      }
+    if (bfmgr.isTrue(branchingFormula)) {
+      logger.log(Level.WARNING, "Could not create error path because of missing branching information!");
+      // return;
+    }
 
+    // add formula to solver environment
+    pProver.push(branchingFormula);
 
     List<ValueAssignment> model = new ArrayList();
     try {
-        // need to ask solver for satisfiability again,
-        // otherwise model doesn't contain new predicates
-        boolean stillSatisfiable = !pProver.isUnsat();
+      // need to ask solver for satisfiability again,
+      // otherwise model doesn't contain new predicates
+      boolean stillSatisfiable = !pProver.isUnsat();
 
-        if (!stillSatisfiable) {
-          // should not occur
-          logger.log(Level.WARNING, "Could not create error path information because of inconsistent branching information!");
-        }
-
-        model = pProver.getModelAssignments();
-      } catch (SolverException e) {
-        logger.log(Level.WARNING, "Solver could not produce model, cannot create error path.");
-        logger.logDebugException(e);
-      } finally {
-        if (shouldCheckBranching) {
-          pProver.pop(); // remove branchingFormula
-        }
+      if (!stillSatisfiable) {
+        // should not occur
+        logger.log(Level.WARNING, "Could not create error path information because of inconsistent branching information!");
       }
+
+      model = pProver.getModelAssignments();
+    } catch (SolverException e) {
+      logger.log(Level.WARNING, "Solver could not produce model, cannot create error path.");
+      logger.logDebugException(e);
+    } finally {
+      pProver.pop(); // remove branchingFormula
+    }
 
     return model;
   }
 
-  private ARGState getRootState(ARGState leafState) {
-    ARGState state = leafState;
-    while (state.getParents().size() == 1 && state.getChildren().size() <= 1) {
-      state = Iterables.getOnlyElement(state.getParents());
+  private void displayPath(Set<ARGState> statesOnErrorPath) {
+    for(ARGState state : statesOnErrorPath) {
+      LocationState loc = AbstractStates.extractStateByType(state, LocationState.class);
+      System.out.println("loc = " + loc);
     }
-
-    return state;
   }
 
   @Override

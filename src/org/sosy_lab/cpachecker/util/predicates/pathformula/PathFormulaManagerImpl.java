@@ -546,14 +546,11 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
 
       // We expect there to be exactly one positive and one negative edge
       CFAEdge edge = outgoingEdges.get(0);
+      System.out.println("edge = " + edge);
 
       if (!(edge.getEdgeType() == CFAEdgeType.AssumeEdge)) {
         continue;
       }
-
-      AssumeEdge assumption = (AssumeEdge) edge;
-
-      BooleanFormula pred = bfmgr.makeVariable(BRANCHING_PREDICATE_NAME + pathElement.getStateId());
 
       Pair<ARGState,CFAEdge> key = Pair.of(pathElement, edge);
       PathFormula pf = parentFormulasOnPath.get(key);
@@ -561,12 +558,12 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
       if(pf == null) {
         PredicateAbstractState pe = AbstractStates.extractStateByType(pathElement, PredicateAbstractState.class);
 
-        // System.out.println("vaState = " + vaState);
         if (pe == null) {
           logger.log(Level.WARNING, "Cannot find precise error path information without PredicateCPA");
           return bfmgr.makeTrue();
         } else {
           pf = pe.getPathFormula();
+          System.out.println("pf.getFormula() = " + pf.getFormula());
         }
       }
       branchingFormula.add(pf.getFormula());

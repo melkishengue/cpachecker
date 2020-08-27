@@ -169,11 +169,6 @@ public class MonitorTransferRelation extends SingleEdgeTransferRelation {
       return ImmutableSet.of();
     }
 
-    System.out.println("totalTimeOnPath = " + totalTimeOnPath);
-    System.out.println("timeLimitForPath = " + timeLimitForPath);
-    System.out.println("stepsOnPath = " + stepsOnPath);
-    System.out.println("stepsLimitForPath = " + stepsLimitForPath);
-
     // check for violation of limits
     if ((preventingCondition == null && timeLimitForPath > 0 && totalTimeOnPath > timeLimitForPath) || (stepsLimitForPath > 0 && stepsOnPath >= stepsLimitForPath)) {
       System.out.println("Generating timeout state because " + totalTimeOnPath + " is bigger than " + timeLimitForPath);
