@@ -204,71 +204,46 @@ public class GeneratePathrangeAlgorithm
       ARGState targetState;
       boolean didTimeoutOccur = targetStates.size() != 0;
 
-
       checkTime.start();
       try {
         List<ValueAssignment> model;
-        if (didTimeoutOccur) {
-          model = constructModelAssignment(targetStates.iterator().next().getParents().iterator().next());
-        } else {
-          // targetState = (ARGState) reached.getLastState();
-          Set<ARGState> statesOnLastPath = new HashSet();
-
-          Map<Integer, Boolean> branchingInformation = new HashMap<>();
-          for(AbstractState abs : reached) {
-            branchingInformation.put(((ARGState) abs).getStateId(), true);
-          }
-
-          Set<ARGState> castedReached =
-              from(reached)
-                  .transform(AbstractStates.toState(ARGState.class))
-                  .toSet();
-
-          ARGPath path = ARGUtils.getPathFromBranchingInformation((ARGState)reached.getFirstState(), castedReached, branchingInformation, false);
-          statesOnLastPath = path.getStateSet();
-          System.out.println("Timeout did not occur. Generating path range based on last visited state.");
-
-          model = constructModelAssignment(statesOnLastPath);
-        }
-
-        System.out.println("model = " + model);
-
-        ArrayList<ValueAssignment> modelCopy = new ArrayList(model);
-
-        Collections.sort(modelCopy, new Comparator<ValueAssignment>(){
-          public int compare(ValueAssignment va1, ValueAssignment va2){
-            return va1.getName().compareTo(va2.getName());
-          }
-        });
-
-        ArrayList<String> foundModelChunks = new ArrayList();
-        ArrayList rangeChunksList = new ArrayList<String>();
-        for(ValueAssignment va : modelCopy) {
-
-          String[] arr = va.getName().split("@", 2);
-          String varName = arr[0];
-
-          if (foundModelChunks.contains(varName)) {
-            continue;
-          }
-
-          foundModelChunks.add(varName);
-
-          if (arr.length > 1) {
-            rangeChunksList.add(varName + "=" + va.getValue());
-          }
-        }
-
-        String range = "null";
-        if ((rangeChunksList.size() > 0)) {
-          range = String.join(" ", rangeChunksList);
-          range = "(" + range + ")";
-        }
-
+        String range = "";
         ValueAnalysisState rootVAState = AbstractStates.extractStateByType(reached.getFirstState(), ValueAnalysisState.class);
-        String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
 
-        range = "[" + range + ", " + rootStateEndRange + "]";
+        if (didTimeoutOccur) {
+          model = constructModelAssignment(targetStates.iterator().next());
+          System.out.println("model = " + model);
+          range = buildRangeValueFromModel(model);
+          String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
+
+          range = "[" + range + ", " + rootStateEndRange + "]";
+        } else {
+          if (!rootVAState.getRangeValueInterval().getEndRange().isNull()) {
+            // timeout did not occur, so whole path range has been checked
+            // and a end range was defined. So nothing to be left - TODO how to encode a range where nothing is left ?
+            String rawRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
+            range = "[(" + rawRange + ") (" + rawRange + ")]";
+          } else {
+            Map<Integer, Boolean> branchingInformation = new HashMap<>();
+            for(AbstractState abs : reached) {
+              branchingInformation.put(((ARGState) abs).getStateId(), true);
+            }
+
+            System.out.println("branchingInformation = " + branchingInformation);
+
+            Set<ARGState> castedReached =
+                from(reached)
+                    .transform(AbstractStates.toState(ARGState.class))
+                    .toSet();
+
+            ARGPath path = ARGUtils.getPathFromBranchingInformation((ARGState)reached.getFirstState(), castedReached, branchingInformation, false);
+            model = constructModelAssignment(path.getLastState());
+            System.out.println("model = " + model);
+            range = buildRangeValueFromModel(model);
+
+            range = "[" + range + ", " + range + "]";
+          }
+        }
         System.out.println("range: " + range);
         RangeUtils.saveRangeToFile("output/pathrange.txt", range);
       } finally {
@@ -277,6 +252,43 @@ public class GeneratePathrangeAlgorithm
     }
 
     return status;
+  }
+
+  private String buildRangeValueFromModel(List<ValueAssignment> model) {
+    ArrayList<String> foundModelChunks = new ArrayList();
+
+    ArrayList<ValueAssignment> modelCopy = new ArrayList(model);
+
+    Collections.sort(modelCopy, new Comparator<ValueAssignment>(){
+      public int compare(ValueAssignment va1, ValueAssignment va2){
+        return va1.getName().compareTo(va2.getName());
+      }
+    });
+
+    ArrayList rangeChunksList = new ArrayList<String>();
+    for(ValueAssignment va : modelCopy) {
+
+      String[] arr = va.getName().split("@", 2);
+      String varName = arr[0];
+
+      if (foundModelChunks.contains(varName)) {
+        continue;
+      }
+
+      foundModelChunks.add(varName);
+
+      if (arr.length > 1) {
+        rangeChunksList.add(varName + "=" + va.getValue());
+      }
+    }
+
+    String range = "null";
+    if ((rangeChunksList.size() > 0)) {
+      range = String.join(" ", rangeChunksList);
+      range = "(" + range + ")";
+    }
+
+    return range;
   }
 
   /**
@@ -299,12 +311,14 @@ public class GeneratePathrangeAlgorithm
   }
 
   public List<ValueAssignment> constructModelAssignment(Set<ARGState> statesOnErrorPath) throws InterruptedException, CPATransferException {
-    displayPath(statesOnErrorPath);
+    // displayPath(statesOnErrorPath);
 
     // get the branchingFormula
     // this formula contains predicates for all branches we took
     // using this we can compute which input values would make the program follow that path
     BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath);
+
+    // System.out.println("End branchingFormula = " + branchingFormula);
 
     if (bfmgr.isTrue(branchingFormula)) {
       logger.log(Level.WARNING, "Could not create error path because of missing branching information!");

@@ -532,7 +532,9 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
       throws CPATransferException, InterruptedException {
     // build the branching formula that will help us find the real error path
 
-    List<BooleanFormula> branchingFormula = new ArrayList<>();
+    BooleanFormula lastAssumeEdgeFormula = bfmgr.makeTrue();
+    // go from last state to root,
+    // find first assume edge and return its boolean formula
     for (final ARGState pathElement : elementsOnPath) {
       Set<ARGState> children = new HashSet<>(pathElement.getChildren());
       Set<ARGState> childrenOnPath = Sets.intersection(children, elementsOnPath).immutableCopy();
@@ -563,13 +565,14 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
           return bfmgr.makeTrue();
         } else {
           pf = pe.getPathFormula();
-          System.out.println("pf.getFormula() = " + pf.getFormula());
         }
+        pf = this.makeAnd(pf, edge);        // conjunct with edge
       }
-      branchingFormula.add(pf.getFormula());
+      lastAssumeEdgeFormula = pf.getFormula();
+      break;
     }
 
-    return bfmgr.and(branchingFormula);
+    return lastAssumeEdgeFormula;
   }
 
   /**
