@@ -127,7 +127,7 @@ public interface PathFormulaManager {
   BooleanFormula buildBranchingFormula(Set<ARGState> pElementsOnPath)
       throws CPATransferException, InterruptedException;
 
-  BooleanFormula buildBranchingFormulaSinglePath(Set<ARGState> pElementsOnPath)
+  BooleanFormula buildBranchingFormulaSinglePath(Set<ARGState> pElementsOnPath, boolean isListOfElementsOnPathInReversedOrder)
       throws CPATransferException, InterruptedException;
 
   /**

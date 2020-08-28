@@ -32,7 +32,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -523,19 +525,24 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
   }
 
   @Override
-  public BooleanFormula buildBranchingFormulaSinglePath(Set<ARGState> elementsOnPath)
+  public BooleanFormula buildBranchingFormulaSinglePath(Set<ARGState> elementsOnPath, boolean isListOfElementsOnPathInReversedOrder)
       throws CPATransferException, InterruptedException {
-    return buildBranchingFormulaSinglePath(elementsOnPath, ImmutableMap.of());
+    return buildBranchingFormulaSinglePath(elementsOnPath, ImmutableMap.of(), isListOfElementsOnPathInReversedOrder);
   }
 
-  public BooleanFormula buildBranchingFormulaSinglePath(Set<ARGState> elementsOnPath, Map<Pair<ARGState,CFAEdge>, PathFormula> parentFormulasOnPath)
+  public BooleanFormula buildBranchingFormulaSinglePath(Set<ARGState> elementsOnPath, Map<Pair<ARGState,CFAEdge>, PathFormula> parentFormulasOnPath, boolean isListOfElementsOnPathInReversedOrder)
       throws CPATransferException, InterruptedException {
     // build the branching formula that will help us find the real error path
+
+    List<ARGState> listElementsOnPath = new ArrayList(elementsOnPath);
+    if (!isListOfElementsOnPathInReversedOrder) {
+      Collections.sort(listElementsOnPath, Collections.reverseOrder());
+    }
 
     BooleanFormula lastAssumeEdgeFormula = bfmgr.makeTrue();
     // go from last state to root,
     // find first assume edge and return its boolean formula
-    for (final ARGState pathElement : elementsOnPath) {
+    for (final ARGState pathElement : listElementsOnPath) {
       Set<ARGState> children = new HashSet<>(pathElement.getChildren());
       Set<ARGState> childrenOnPath = Sets.intersection(children, elementsOnPath).immutableCopy();
 

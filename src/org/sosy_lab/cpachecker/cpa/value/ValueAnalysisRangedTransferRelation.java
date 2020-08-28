@@ -362,7 +362,6 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
     for (AbstractState vaState : postProcessedResult) {
 
       CFANode node = pCfaEdge.getPredecessor();
-      System.out.println("node = " + node);
       ExpressionValueVisitor visitor = getVisitor((ValueAnalysisState) vaState);
 
       try {

@@ -211,7 +211,7 @@ public class GeneratePathrangeAlgorithm
         ValueAnalysisState rootVAState = AbstractStates.extractStateByType(reached.getFirstState(), ValueAnalysisState.class);
 
         if (didTimeoutOccur) {
-          model = constructModelAssignment(targetStates.iterator().next());
+          model = constructModelAssignment(targetStates.iterator().next(), true);
           System.out.println("model = " + model);
           range = buildRangeValueFromModel(model);
           String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
@@ -237,7 +237,10 @@ public class GeneratePathrangeAlgorithm
                     .toSet();
 
             ARGPath path = ARGUtils.getPathFromBranchingInformation((ARGState)reached.getFirstState(), castedReached, branchingInformation, false);
-            model = constructModelAssignment(path.getLastState());
+            System.out.println("path = " + path);
+            System.out.println(path.getFirstState());
+            System.out.println(path.getLastState());
+            model = constructModelAssignment(path.getStateSet(), false);
             System.out.println("model = " + model);
             range = buildRangeValueFromModel(model);
 
@@ -298,7 +301,7 @@ public class GeneratePathrangeAlgorithm
    * @param errorState where the counterexample ends
    * @param reached all reached states of the analysis, some of the states are part of the CEX path
    */
-  public List<ValueAssignment> constructModelAssignment(ARGState targetState) throws InterruptedException, CPATransferException {
+  public List<ValueAssignment> constructModelAssignment(ARGState targetState, boolean isListOfElementsOnPathInReversedOrder) throws InterruptedException, CPATransferException {
     // TODO is it enough to consider only the first target state ?
     // thte first one is the left most target state. So the other target states will be ignored here
     // but included in the output range and later on processed by other analysis
@@ -307,16 +310,16 @@ public class GeneratePathrangeAlgorithm
     System.out.println("-----------------------------------------------------------------------------");
     System.out.println("Generating path range for location " + loc);
     Set<ARGState> statesOnErrorPath = ARGUtils.getAllStatesOnPathsTo(targetState);
-    return constructModelAssignment(statesOnErrorPath);
+    return constructModelAssignment(statesOnErrorPath, isListOfElementsOnPathInReversedOrder);
   }
 
-  public List<ValueAssignment> constructModelAssignment(Set<ARGState> statesOnErrorPath) throws InterruptedException, CPATransferException {
+  public List<ValueAssignment> constructModelAssignment(Set<ARGState> statesOnErrorPath, boolean isListOfElementsOnPathInReversedOrder) throws InterruptedException, CPATransferException {
     // displayPath(statesOnErrorPath);
 
     // get the branchingFormula
     // this formula contains predicates for all branches we took
     // using this we can compute which input values would make the program follow that path
-    BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath);
+    BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath, isListOfElementsOnPathInReversedOrder);
 
     // System.out.println("End branchingFormula = " + branchingFormula);
 

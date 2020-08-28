@@ -192,9 +192,9 @@ public class CachingPathFormulaManager implements PathFormulaManager {
   }
 
   @Override
-  public BooleanFormula buildBranchingFormulaSinglePath(Set<ARGState> pElementsOnPath)
+  public BooleanFormula buildBranchingFormulaSinglePath(Set<ARGState> pElementsOnPath, boolean isListOfElementsOnPathInReversedOrder)
       throws CPATransferException, InterruptedException {
-    return delegate.buildBranchingFormulaSinglePath(pElementsOnPath);
+    return delegate.buildBranchingFormulaSinglePath(pElementsOnPath, isListOfElementsOnPathInReversedOrder);
   }
 
   @Override
