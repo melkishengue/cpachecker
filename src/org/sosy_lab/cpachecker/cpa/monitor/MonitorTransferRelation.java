@@ -171,7 +171,7 @@ public class MonitorTransferRelation extends SingleEdgeTransferRelation {
 
     // check for violation of limits
     if ((preventingCondition == null && timeLimitForPath > 0 && totalTimeOnPath > timeLimitForPath) || (stepsLimitForPath > 0 && stepsOnPath >= stepsLimitForPath)) {
-      System.out.println("Generating timeout state because " + totalTimeOnPath + " is bigger than " + timeLimitForPath);
+      // System.out.println("Generating timeout state because " + totalTimeOnPath + " is bigger than " + timeLimitForPath);
       successors = Collections.singleton(TimeoutState.INSTANCE);
         preventingCondition = Pair.of(PreventingHeuristic.PATHCOMPTIME, timeLimitForPath);
     }

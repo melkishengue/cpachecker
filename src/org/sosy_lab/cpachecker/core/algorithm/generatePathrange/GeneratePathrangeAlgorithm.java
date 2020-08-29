@@ -218,7 +218,7 @@ public class GeneratePathrangeAlgorithm
 
           range = "[" + range + ", " + rootStateEndRange + "]";
         } else {
-          if (!rootVAState.getRangeValueInterval().getEndRange().isNull()) {
+          /*if (!rootVAState.getRangeValueInterval().getEndRange().isNull()) {
             // timeout did not occur, so whole path range has been checked
             // and a end range was defined. So nothing to be left - TODO how to encode a range where nothing is left ?
             String rawRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
@@ -229,23 +229,24 @@ public class GeneratePathrangeAlgorithm
               branchingInformation.put(((ARGState) abs).getStateId(), true);
             }
 
-            System.out.println("branchingInformation = " + branchingInformation);
-
             Set<ARGState> castedReached =
                 from(reached)
                     .transform(AbstractStates.toState(ARGState.class))
                     .toSet();
 
             ARGPath path = ARGUtils.getPathFromBranchingInformation((ARGState)reached.getFirstState(), castedReached, branchingInformation, false);
-            System.out.println("path = " + path);
-            System.out.println(path.getFirstState());
-            System.out.println(path.getLastState());
             model = constructModelAssignment(path.getStateSet(), false);
             System.out.println("model = " + model);
             range = buildRangeValueFromModel(model);
 
             range = "[" + range + ", " + range + "]";
-          }
+
+
+
+          }*/
+
+          // timeout did not occur, so whole path range has been checked, output empty range
+          range = "[__done__]";
         }
         System.out.println("range: " + range);
         RangeUtils.saveRangeToFile("output/pathrange.txt", range);
@@ -321,7 +322,7 @@ public class GeneratePathrangeAlgorithm
     // using this we can compute which input values would make the program follow that path
     BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath, isListOfElementsOnPathInReversedOrder);
 
-    // System.out.println("End branchingFormula = " + branchingFormula);
+    System.out.println("branchingFormula = " + branchingFormula);
 
     if (bfmgr.isTrue(branchingFormula)) {
       logger.log(Level.WARNING, "Could not create error path because of missing branching information!");

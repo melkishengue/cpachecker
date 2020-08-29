@@ -22,8 +22,10 @@ package org.sosy_lab.cpachecker.cpa.value.range;
 import java.util.regex.Pattern;
 
 public class RangeValueInterval {
+  private static final String EMPTY_RANGE_MARKER = "__empty__";
   RangeValue startRange;
   RangeValue endRange;
+  boolean isEmpty;
 
   public boolean isLeftUnbounded() {
     return this.getStartRange().isNull;
@@ -49,33 +51,46 @@ public class RangeValueInterval {
     endRange = pEndRange;
   }
 
+  public boolean isEmpty() {
+    return this.isEmpty;
+  }
+
+  public void setIsEmpty(boolean pIsEmpty) {
+    isEmpty = pIsEmpty;
+  }
+
   public RangeValueInterval() {
     this.startRange = new RangeValue("null");
     this.endRange = new RangeValue("null");
+    this.isEmpty = false;
   }
 
   public RangeValueInterval(String rawRangeValue) {
-    String rawRangeValueNoBraces = rawRangeValue;
-    // remove eventual first and last braces
-    rawRangeValueNoBraces = rawRangeValueNoBraces.substring(0, rawRangeValueNoBraces.length() - 1);
-    rawRangeValueNoBraces = rawRangeValueNoBraces.substring(1, rawRangeValueNoBraces.length());
+    this.isEmpty = rawRangeValue.contains(this.EMPTY_RANGE_MARKER);
+    if (!this.isEmpty) {
+      String rawRangeValueNoBraces = rawRangeValue;
+      // remove eventual first and last braces
+      rawRangeValueNoBraces = rawRangeValueNoBraces.substring(0, rawRangeValueNoBraces.length() - 1);
+      rawRangeValueNoBraces = rawRangeValueNoBraces.substring(1, rawRangeValueNoBraces.length());
 
-    String[] arrOfStr = rawRangeValueNoBraces.split(Pattern.quote(","), 5);
+      String[] arrOfStr = rawRangeValueNoBraces.split(Pattern.quote(","), 5);
 
-    String rawStartRangeValue = arrOfStr[0].trim();
-    String rawEndRangeValue = arrOfStr[1].trim();
+      String rawStartRangeValue = arrOfStr[0].trim();
+      String rawEndRangeValue = arrOfStr[1].trim();
 
-    // if nothing specified set it to null
-    rawStartRangeValue = arrOfStr[0].equals("") ? "null" : rawStartRangeValue;
-    rawEndRangeValue = arrOfStr[1].equals("") ? "null" : rawEndRangeValue;
+      // if nothing specified set it to null
+      rawStartRangeValue = arrOfStr[0].equals("") ? "null" : rawStartRangeValue;
+      rawEndRangeValue = arrOfStr[1].equals("") ? "null" : rawEndRangeValue;
 
-    this.startRange = new RangeValue(rawStartRangeValue);
-    this.endRange = new RangeValue(rawEndRangeValue);
+      this.startRange = new RangeValue(rawStartRangeValue);
+      this.endRange = new RangeValue(rawEndRangeValue);
+    }
   }
 
   public RangeValueInterval(RangeValue pStartRange, RangeValue pEndRange) {
     this.startRange = pStartRange;
     this.endRange = pEndRange;
+    this.isEmpty = false;
   }
 
   @Override

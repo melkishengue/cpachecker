@@ -6,10 +6,10 @@ int main (int a, int b, int c) {
 	// ERROR: __VERIFIER_error();
 	a = a+2; // 2
 
-	// a = b - c; // 
+	// a = b - c; // (main::a=0 main::b=3 main::c=7)
 	b = b*2; // 6
 
-	c = c + 1; // 1
+	// c = c + 1; // 1
 
 	if (a < b) { // 
 		if (b < c) {
