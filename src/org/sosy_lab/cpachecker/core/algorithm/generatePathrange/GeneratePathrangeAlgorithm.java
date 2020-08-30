@@ -240,9 +240,6 @@ public class GeneratePathrangeAlgorithm
             range = buildRangeValueFromModel(model);
 
             range = "[" + range + ", " + range + "]";
-
-
-
           }*/
 
           // timeout did not occur, so whole path range has been checked, output empty range

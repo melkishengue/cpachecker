@@ -142,7 +142,7 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
         ExpressionValueVisitor evv1 = getVisitor(duplicate1);
         intervalStartImpliesValue =
-            representsBoolean(getExpressionValue(expression, booleanType, evv1), true);
+            representsBoolean(getExpressionValue(expression, booleanType, evv1), false);
       }
 
       if (!endRangeValue.isNull()) {
@@ -169,7 +169,7 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
               + " and intervalEndImpliesValue="
               + intervalEndImpliesValue);
 
-      if (intervalStartImpliesValue) {
+      if (!intervalStartImpliesValue && !startRangeValue.isNull()) {
         if (truthValue) {
           System.out.println("Then case." + element.getRangeValueInterval());
           return element;
@@ -179,8 +179,8 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
         return null;
       }
 
-      if (intervalEndImpliesValue) {
-        if (truthValue) {
+      if (intervalEndImpliesValue && !endRangeValue.isNull()) {
+        if (!truthValue) {
           System.out.println("Else case. New range is " + element.getRangeValueInterval());
           return element;
         }
@@ -358,35 +358,8 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
       }
     }
 
-    // if entry node, get all parameters and for each create symbolic value if not already created
     for (AbstractState vaState : postProcessedResult) {
-
-      CFANode node = pCfaEdge.getPredecessor();
-      ExpressionValueVisitor visitor = getVisitor((ValueAnalysisState) vaState);
-
-      try {
-        MemoryLocationValueHandler unknownValueHandler = new SymbolicValueAssigner(
-            Configuration.builder().build());
-
-        if (node instanceof FunctionEntryNode) {
-          FunctionEntryNode entryNode = (FunctionEntryNode) node;
-          for (AParameterDeclaration param : entryNode.getFunctionParameters()) {
-
-            MemoryLocation mem = MemoryLocation.valueOf(param.getQualifiedName());
-            if (((ValueAnalysisState) vaState).getConstants().contains(mem)) {
-              continue;
-            }
-
-            unknownValueHandler.handle(MemoryLocation.valueOf(param.getQualifiedName()), param.getType(), (ValueAnalysisState)vaState, visitor);
-          }
-        }
-      } catch (InvalidConfigurationException e) {
-        break;
-      }
-    }
-
-    for (AbstractState vaState : postProcessedResult) {
-      // vaState = updateRangeValues((ValueAnalysisState)vaState, pCfaEdge);
+      vaState = updateRangeInterval((ValueAnalysisState)vaState, pCfaEdge);
     }
 
     super.resetInfo();
@@ -395,32 +368,31 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
     return postProcessedResult;
   }
 
-  protected ValueAnalysisState updateRangeValues(ValueAnalysisState pValueAnalysisState, CFAEdge pCFAEdge)  throws CPATransferException {
+  protected ValueAnalysisState updateRangeInterval(ValueAnalysisState pValueAnalysisState, CFAEdge pCFAEdge)  throws CPATransferException {
     ValueAnalysisState vaState = ValueAnalysisState.copyOf(pValueAnalysisState);
 
     System.out.println("-----------------------------------------------------------------------------");
     System.out.println("Started post processing.");
 
-    // System.out.println("vaState = " + vaState);
-
     RangeValueInterval rviInitial = vaState.getInitialRangeValueInterval();
-    ValueAnalysisState duplicate = identifyAndReplaceSymbolicValuesByValues(pValueAnalysisState, rviInitial.getStartRange());
-    ValueAnalysisState duplicate2 = identifyAndReplaceSymbolicValuesByValues(pValueAnalysisState, rviInitial.getEndRange());
 
-    // use expression value visitor to compute each real value
-    ExpressionValueVisitor evv = getVisitor(duplicate, functionName);
-    ExpressionValueVisitor evv2 = getVisitor(duplicate2, functionName);
+    if (!rviInitial.getStartRange().isNull()) {
+      ValueAnalysisState duplicate = identifyAndReplaceSymbolicValuesByValues(pValueAnalysisState, rviInitial.getStartRange());
+      RangeValue newStartRange = updateRangeValue(duplicate, vaState.getRangeValueInterval().getStartRange(), true);
+      vaState.getRangeValueInterval().setStartRange(newStartRange);
+    }
 
-    RangeValue newStartRange = updateRange(duplicate, vaState.getRangeValueInterval().getStartRange(), true);
-    vaState.getRangeValueInterval().setStartRange(newStartRange);
-
-    RangeValue newEndRange = updateRange(duplicate2, vaState.getRangeValueInterval().getEndRange(), false);
-    vaState.getRangeValueInterval().setEndRange(newEndRange);
+    if (!rviInitial.getEndRange().isNull()) {
+      ValueAnalysisState duplicate2 = identifyAndReplaceSymbolicValuesByValues(pValueAnalysisState, rviInitial.getEndRange());
+      RangeValue newEndRange = updateRangeValue(duplicate2, vaState.getRangeValueInterval().getEndRange(), false);
+      vaState.getRangeValueInterval().setEndRange(newEndRange);
+    }
 
     return vaState;
   }
 
-  private RangeValue updateRange(ValueAnalysisState pValueAnalysisStateState, RangeValue pOldRange, boolean pIsUpdatingStartRange) throws CPATransferException {
+  private RangeValue updateRangeValue(ValueAnalysisState pValueAnalysisStateState, RangeValue pOldRange, boolean pIsUpdatingStartRange) throws CPATransferException {
+
     RangeValue range = pOldRange;
     ExpressionValueVisitor evv = getVisitor(pValueAnalysisStateState, functionName);
 
@@ -435,7 +407,6 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
       if (value instanceof SymbolicValue) {
         Value val = evaluateStatementExpression(value, type, evv);
 
-
         // update range value interval start if new value
         if (val.isExplicitlyKnown()) {
           System.out.println("updating " + rangeString + " variable " + memoryLocationVariableName + " with value " + val);
@@ -444,8 +415,6 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
         } else {
           System.out.println(rangeString + " range Variable " + memoryLocationVariableName + " value is UNKNOWN");
         }
-      } else {
-        // System.out.println(rangeString + " variable " + memoryLocationVariableName + " is " + value);
       }
     }
 
@@ -467,7 +436,11 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
   }
 
   public ValueAnalysisState identifyAndReplaceSymbolicValuesByValues(ValueAnalysisState pValueAnalysisState, RangeValue pRangeValue) {
-    ValueAnalysisState duplicate = ValueAnalysisState.copyOf((ValueAnalysisState) pValueAnalysisState);
+    ValueAnalysisState duplicate = ValueAnalysisState.copyOf(pValueAnalysisState);
+
+    if (pRangeValue.isNull()) {
+      return duplicate;
+    }
 
     // fetch all symbolic value in each constants
     Set<SymbolicIdentifier> symbolicValues = new HashSet<>();
@@ -496,13 +469,27 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
       }
     }
 
+    // get all constants from duplicate
+    Map<MemoryLocation, ValueAndType> variables = pRangeValue.getVariablesMapFullyQualified();
+
+    for (Entry<MemoryLocation, ValueAndType> entry : variables.entrySet()) {
+      // check if all values from range are defined
+      MemoryLocation location = entry.getKey();
+      if (!duplicate.getConstants().contains(location)) {
+        // get initial value of not found variable
+        ValueAndType value = pRangeValue.getVariablesMapFullyQualified().get(location);
+        // if not defined, assign the initial value
+        assignConstantMultipleTimes(duplicate, location.getAsSimpleString(), value.getValue());
+      }
+    }
+
     return duplicate;
   }
 
   public void assignConstantMultipleTimes(ValueAnalysisState pState, String pVariableName, Value pValue) {
     pState.assignConstant(pVariableName, pValue);
     for (int i = 0; i<15; i++) {
-      pState.assignConstant(pVariableName + "#" + i, pValue);
+       pState.assignConstant(pVariableName + "#" + i, pValue);
     }
   }
 

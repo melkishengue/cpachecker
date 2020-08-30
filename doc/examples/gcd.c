@@ -1,20 +1,9 @@
 extern void __VERIFIER_error() __attribute__ ((__noreturn__));
 
-void do_stuff(int a) {
-	int b;
-	if (a<1) {
-		// ERROR: __VERIFIER_error();
-		b = 1;
-	}
-
-	if (a > 10) {
-		b = 2;
-	} else {
-		b = 1;
-	}
-}
-
+// int main() {
+// int a; int b;
 int main(int a, int b) {
+	
     while (a!=b) {
         if (a>b) {
         	a = a - b;
