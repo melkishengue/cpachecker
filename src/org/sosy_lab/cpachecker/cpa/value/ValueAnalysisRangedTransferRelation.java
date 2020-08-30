@@ -99,6 +99,8 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
     System.out.println("-----------------------------------------------------------------------------");
 
+    System.out.println("state.getConstants() = " + state.getConstants());
+
     if (stats != null) {
       stats.incrementAssumptions();
     }
@@ -377,9 +379,11 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
     RangeValueInterval rviInitial = vaState.getInitialRangeValueInterval();
 
     if (!rviInitial.getStartRange().isNull()) {
+      System.out.println("1");
       ValueAnalysisState duplicate = identifyAndReplaceSymbolicValuesByValues(pValueAnalysisState, rviInitial.getStartRange());
       RangeValue newStartRange = updateRangeValue(duplicate, vaState.getRangeValueInterval().getStartRange(), true);
       vaState.getRangeValueInterval().setStartRange(newStartRange);
+      System.out.println("2");
     }
 
     if (!rviInitial.getEndRange().isNull()) {
@@ -429,6 +433,8 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
     CExpression expression = (CExpression) svv.visit(constantSymbolicExpression);
 
+    System.out.println("expression = " + expression);
+
     // evaluate created expression
     Value val = getExpressionValue(expression, type, evv);
 
@@ -437,6 +443,8 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
   public ValueAnalysisState identifyAndReplaceSymbolicValuesByValues(ValueAnalysisState pValueAnalysisState, RangeValue pRangeValue) {
     ValueAnalysisState duplicate = ValueAnalysisState.copyOf(pValueAnalysisState);
+
+    System.out.println("duplicate.getConstants() = " + duplicate.getConstants());
 
     if (pRangeValue.isNull()) {
       return duplicate;
@@ -451,6 +459,8 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
         symbolicValues.addAll(SymbolicValues.getContainedSymbolicIdentifiers((SymbolicValue) v));
       }
     }
+
+    System.out.println("symbolicValues = " + symbolicValues);
 
     // replace by value from range
     Iterator<SymbolicIdentifier> iter = symbolicValues.iterator();
@@ -488,7 +498,7 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
   public void assignConstantMultipleTimes(ValueAnalysisState pState, String pVariableName, Value pValue) {
     pState.assignConstant(pVariableName, pValue);
-    for (int i = 0; i<15; i++) {
+    for (int i = 0; i<3; i++) {
        pState.assignConstant(pVariableName + "#" + i, pValue);
     }
   }

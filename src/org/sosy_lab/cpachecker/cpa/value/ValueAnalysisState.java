@@ -472,6 +472,9 @@ public final class ValueAnalysisState
     sb.append("[");
     for (Entry<MemoryLocation, ValueAndType> entry : constantsMap.entrySet()) {
       MemoryLocation key = entry.getKey();
+      if (key.getAsSimpleString().contains("#")) {
+        continue;
+      }
       sb.append(" <");
       sb.append(key.getAsSimpleString());
       sb.append(" = ");
