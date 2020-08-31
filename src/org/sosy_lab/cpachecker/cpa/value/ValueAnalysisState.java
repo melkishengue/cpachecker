@@ -153,8 +153,8 @@ public final class ValueAnalysisState
     machineModel = state.machineModel;
     constantsMap = checkNotNull(state.constantsMap);
     hashCode = state.hashCode;
-    rangeValueInterval = state.rangeValueInterval;
-    initialRangeValueInterval = state.initialRangeValueInterval;
+    rangeValueInterval = state.getRangeValueInterval();
+    initialRangeValueInterval = state.getInitialRangeValueInterval();
     assert hashCode == constantsMap.hashCode();
   }
 
@@ -472,9 +472,7 @@ public final class ValueAnalysisState
     sb.append("[");
     for (Entry<MemoryLocation, ValueAndType> entry : constantsMap.entrySet()) {
       MemoryLocation key = entry.getKey();
-      if (key.getAsSimpleString().contains("#")) {
-        continue;
-      }
+
       sb.append(" <");
       sb.append(key.getAsSimpleString());
       sb.append(" = ");
@@ -482,7 +480,7 @@ public final class ValueAnalysisState
       sb.append(">\n");
     }
 
-    sb.append(this.initialRangeValueInterval);
+    // sb.append(this.initialRangeValueInterval);
     sb.append(this.rangeValueInterval);
     return sb.append("] size->  ").append(constantsMap.size()).toString();
   }

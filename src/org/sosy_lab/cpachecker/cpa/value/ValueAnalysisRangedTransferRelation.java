@@ -99,8 +99,6 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
     System.out.println("-----------------------------------------------------------------------------");
 
-    System.out.println("state.getConstants() = " + state.getConstants());
-
     if (stats != null) {
       stats.incrementAssumptions();
     }
@@ -112,6 +110,8 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
     final Type booleanType = getBooleanType(expression);
 
     RangeValueInterval rvi1 = state.getRangeValueInterval();
+    RangeValue startInitialRangeValue = state.getInitialRangeValueInterval().getStartRange();
+    RangeValue endInitialRangeValue = state.getInitialRangeValueInterval().getEndRange();
     RangeValue startRangeValue = rvi1.getStartRange();
     RangeValue endRangeValue = rvi1.getEndRange();
 
@@ -133,31 +133,78 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
       Boolean intervalEndImpliesValue = false;
 
       if (!startRangeValue.isNull()) {
-        Map<MemoryLocation, ValueAndType> variables = startRangeValue.getVariablesMapFullyQualified();
+        Map<MemoryLocation, ValueAndType> variables = startInitialRangeValue.getVariablesMapFullyQualified();
         ValueAnalysisState duplicate1 = ValueAnalysisState.copyOf(state);
 
         for (Entry<MemoryLocation, ValueAndType> entry : variables.entrySet()) {
-          duplicate1.assignConstant(
-              entry.getKey().getAsSimpleString(),
-              entry.getValue().getValue());
+          assignConstantMultipleTimes(duplicate1, entry.getKey().getAsSimpleString(), entry.getValue().getValue());
         }
 
-        ExpressionValueVisitor evv1 = getVisitor(duplicate1);
+        ExpressionValueVisitor evv1 = getVisitor(duplicate1, functionName);
+
+        for (Entry<MemoryLocation, ValueAndType> e : duplicate1.getConstants()) {
+          ValueAndType v = e.getValue();
+          MemoryLocation location = e.getKey();
+          String memoryLocationVariableName = location.getAsSimpleString();
+          String rangeString = "start";
+
+          if (v.getValue() instanceof SymbolicValue) {
+            Value val = null;
+            try {
+              val = evaluateStatementExpression(v.getValue(), v.getType(), evv1);
+            } catch (CPATransferException pE) {
+              pE.printStackTrace();
+            }
+
+            // update range value interval start if new value
+            if (val.isExplicitlyKnown()) {
+              System.out.println("updating " + rangeString + " variable " + memoryLocationVariableName + " with value " + val);
+              duplicate1.assignConstant(location, val, v.getType());
+            } else {
+              System.out.println("Could not evaluate expression because of missing information");
+            }
+          }
+        }
+
+        // System.out.println("duplicate1 = " + duplicate1);
         intervalStartImpliesValue =
             representsBoolean(getExpressionValue(expression, booleanType, evv1), false);
       }
 
       if (!endRangeValue.isNull()) {
-        Map<MemoryLocation, ValueAndType> variables = endRangeValue.getVariablesMapFullyQualified();
+        Map<MemoryLocation, ValueAndType> variables = endInitialRangeValue.getVariablesMapFullyQualified();
         ValueAnalysisState duplicate2 = ValueAnalysisState.copyOf(state);
 
         for (Entry<MemoryLocation, ValueAndType> entry : variables.entrySet()) {
-          duplicate2.assignConstant(
-              entry.getKey().getAsSimpleString(),
-              entry.getValue().getValue());
+          assignConstantMultipleTimes(duplicate2, entry.getKey().getAsSimpleString(), entry.getValue().getValue());
         }
 
-        ExpressionValueVisitor evv2 = getVisitor(duplicate2);
+        ExpressionValueVisitor evv2 = getVisitor(duplicate2, functionName);
+
+        for (Entry<MemoryLocation, ValueAndType> e : duplicate2.getConstants()) {
+          ValueAndType v = e.getValue();
+          MemoryLocation location = e.getKey();
+          String memoryLocationVariableName = location.getAsSimpleString();
+          String rangeString = "end";
+
+          if (v.getValue() instanceof SymbolicValue) {
+            Value val = null;
+            try {
+              val = evaluateStatementExpression(v.getValue(), v.getType(), evv2);
+            } catch (CPATransferException pE) {
+              pE.printStackTrace();
+            }
+
+            // update range value interval start if new value
+            if (val.isExplicitlyKnown()) {
+              System.out.println("updating " + rangeString + " variable " + memoryLocationVariableName + " with value " + val);
+              duplicate2.assignConstant(location, val, v.getType());
+            } else {
+              System.out.println("Could not evaluate expression because of missing information");
+            }
+          }
+        }
+
         intervalEndImpliesValue =
             representsBoolean(getExpressionValue(expression, booleanType, evv2), false);
       }
@@ -234,8 +281,6 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
       return element;
     } else if (representsBoolean(value, truthValue)) {
-
-
       ValueAnalysisState valueAnalysisState = ValueAnalysisState.copyOf(state);
 
       // this is the boolean case
@@ -360,7 +405,10 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
       }
     }
 
+    System.out.println("-----------------------------------------------------------------------------");
+    System.out.println("Started post processing.");
     for (AbstractState vaState : postProcessedResult) {
+      System.out.println("-------------------------------------");
       vaState = updateRangeInterval((ValueAnalysisState)vaState, pCfaEdge);
     }
 
@@ -372,18 +420,12 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
   protected ValueAnalysisState updateRangeInterval(ValueAnalysisState pValueAnalysisState, CFAEdge pCFAEdge)  throws CPATransferException {
     ValueAnalysisState vaState = ValueAnalysisState.copyOf(pValueAnalysisState);
-
-    System.out.println("-----------------------------------------------------------------------------");
-    System.out.println("Started post processing.");
-
     RangeValueInterval rviInitial = vaState.getInitialRangeValueInterval();
 
     if (!rviInitial.getStartRange().isNull()) {
-      System.out.println("1");
       ValueAnalysisState duplicate = identifyAndReplaceSymbolicValuesByValues(pValueAnalysisState, rviInitial.getStartRange());
       RangeValue newStartRange = updateRangeValue(duplicate, vaState.getRangeValueInterval().getStartRange(), true);
       vaState.getRangeValueInterval().setStartRange(newStartRange);
-      System.out.println("2");
     }
 
     if (!rviInitial.getEndRange().isNull()) {
@@ -444,8 +486,6 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
   public ValueAnalysisState identifyAndReplaceSymbolicValuesByValues(ValueAnalysisState pValueAnalysisState, RangeValue pRangeValue) {
     ValueAnalysisState duplicate = ValueAnalysisState.copyOf(pValueAnalysisState);
 
-    System.out.println("duplicate.getConstants() = " + duplicate.getConstants());
-
     if (pRangeValue.isNull()) {
       return duplicate;
     }
@@ -460,11 +500,10 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
       }
     }
 
-    System.out.println("symbolicValues = " + symbolicValues);
-
     // replace by value from range
     Iterator<SymbolicIdentifier> iter = symbolicValues.iterator();
 
+    ExpressionValueVisitor evv = getVisitor(duplicate, functionName);
     while (iter.hasNext()) {
       SymbolicIdentifier identifier = iter.next();
       MemoryLocation m = identifier.getRepresentedLocation().get();
@@ -473,14 +512,15 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
       ValueAndType constant = pRangeValue.getVariablesMapFullyQualified().get(m);
 
       if (constant != null) {
+        // System.out.println("Assigning value " + constant.getValue() + " to identifier " + identifier);
         // assign constant
-        // TODO remove hardcoded var identifier
+        // duplicate.assignConstant(identifier, constant.getValue(), evv);
         assignConstantMultipleTimes(duplicate, m.getAsSimpleString(), constant.getValue());
       }
     }
 
     // get all constants from duplicate
-    Map<MemoryLocation, ValueAndType> variables = pRangeValue.getVariablesMapFullyQualified();
+    /*Map<MemoryLocation, ValueAndType> variables = pRangeValue.getVariablesMapFullyQualified();
 
     for (Entry<MemoryLocation, ValueAndType> entry : variables.entrySet()) {
       // check if all values from range are defined
@@ -491,13 +531,13 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
         // if not defined, assign the initial value
         assignConstantMultipleTimes(duplicate, location.getAsSimpleString(), value.getValue());
       }
-    }
+    }*/
 
     return duplicate;
   }
 
   public void assignConstantMultipleTimes(ValueAnalysisState pState, String pVariableName, Value pValue) {
-    pState.assignConstant(pVariableName, pValue);
+    // pState.assignConstant(pVariableName, pValue);
     for (int i = 0; i<3; i++) {
        pState.assignConstant(pVariableName + "#" + i, pValue);
     }
