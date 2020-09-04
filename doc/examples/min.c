@@ -1,13 +1,15 @@
 extern void __VERIFIER_error() __attribute__ ((__noreturn__));
+extern void __VERIFIER_assume(int expression) __attribute__ ((__noreturn__));
 
 int main (int a, int b, int c) {
-	int min = 0;
+	// __VERIFIER_assume((a <= 1000) && (b <= 1000) && (c <= 1000) && (a >= -1000) && (b >= -1000) && (c >= -1000));
+	int min = 0; // (main::a=1 main::b=8 main::c=-15)
 
-	// ERROR: __VERIFIER_error();
-	a = a+2; // 2
+	// ERROR: __VERIFIER_error(); // (main::a=1 main::b=4 main::c=5)
+	a = a+2; // 3
 
-	// a = b - c; // (main::a=0 main::b=3 main::c=7)
-	b = b*2; // 6
+	a = b - c; // 23
+	b = b*2; // 16, c = -15
 
 	// c = c + 1; // 1
 
@@ -16,7 +18,7 @@ int main (int a, int b, int c) {
 			min = a;
 		} else {
 			if(a < c) {
-				min = a; // ereh
+				min = a; // here
 			} else {
 				// ERROR: __VERIFIER_error();
 				min = c;

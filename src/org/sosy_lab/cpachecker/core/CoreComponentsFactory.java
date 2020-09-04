@@ -66,6 +66,7 @@ import org.sosy_lab.cpachecker.core.algorithm.UndefinedFunctionCollectorAlgorith
 import org.sosy_lab.cpachecker.core.algorithm.bmc.BMCAlgorithm;
 import org.sosy_lab.cpachecker.core.algorithm.bmc.pdr.PdrAlgorithm;
 import org.sosy_lab.cpachecker.core.algorithm.counterexamplecheck.CounterexampleCheckAlgorithm;
+import org.sosy_lab.cpachecker.core.algorithm.counterexamplecheck.CounterexampleCheckAlgorithmWithTimeout;
 import org.sosy_lab.cpachecker.core.algorithm.generatePathrange.GeneratePathrangeAlgorithm;
 import org.sosy_lab.cpachecker.core.algorithm.impact.ImpactAlgorithm;
 import org.sosy_lab.cpachecker.core.algorithm.mpv.MPVAlgorithm;
@@ -476,11 +477,11 @@ public class CoreComponentsFactory {
                 aggregatedReachedSets);
       }
 
-      if (generateRangeAfterTimeout) {
+      /*if (generateRangeAfterTimeout) {
         algorithm =
             new GeneratePathrangeAlgorithm(
                 algorithm, cpa, config, specification, logger, shutdownNotifier, cfa);
-      }
+      }*/
 
       if (checkCounterexamples) {
         if (cpa instanceof BAMCPA) {
@@ -488,9 +489,16 @@ public class CoreComponentsFactory {
               new BAMCounterexampleCheckAlgorithm(
                   algorithm, cpa, config, logger, shutdownNotifier, specification, cfa);
         } else {
-          algorithm =
-              new CounterexampleCheckAlgorithm(
-                  algorithm, cpa, config, specification, logger, shutdownNotifier, cfa);
+          if (!generateRangeAfterTimeout) {
+            algorithm =
+                new CounterexampleCheckAlgorithm(
+                    algorithm, cpa, config, specification, logger, shutdownNotifier, cfa);
+          } else {
+            algorithm =
+                new CounterexampleCheckAlgorithmWithTimeout(
+                    algorithm, cpa, config, specification, logger, shutdownNotifier, cfa);
+          }
+
         }
       }
 

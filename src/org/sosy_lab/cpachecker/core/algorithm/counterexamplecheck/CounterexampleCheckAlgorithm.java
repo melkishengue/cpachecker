@@ -72,20 +72,20 @@ public class CounterexampleCheckAlgorithm
     CBMC, CPACHECKER, CONCRETE_EXECUTION;
   }
 
-  private final Algorithm algorithm;
+  protected final Algorithm algorithm;
   private final CounterexampleChecker checker;
   private final LogManager logger;
 
-  private final Timer checkTime = new Timer();
+  protected final Timer checkTime = new Timer();
   private int numberOfInfeasiblePaths = 0;
 
-  private final Set<ARGState> checkedTargetStates = Collections.newSetFromMap(new WeakHashMap<>());
+  protected final Set<ARGState> checkedTargetStates = Collections.newSetFromMap(new WeakHashMap<>());
 
   @Option(secure=true, name="checker",
           description="Which model checker to use for verifying counterexamples as a second check.\n"
                     + "Currently CBMC or CPAchecker with a different config or the concrete execution \n"
                     + "checker can be used.")
-  private CounterexampleCheckerType checkerType = CounterexampleCheckerType.CBMC;
+  protected CounterexampleCheckerType checkerType = CounterexampleCheckerType.CBMC;
 
   @Option(secure=true, name="ambigiousARG",
       description="True if the path to the error state can not always be uniquely determined from the ARG.\n"
@@ -192,7 +192,7 @@ public class CounterexampleCheckAlgorithm
     return status;
   }
 
-  private boolean checkCounterexample(ARGState errorState, ReachedSet reached)
+  protected boolean checkCounterexample(ARGState errorState, ReachedSet reached)
       throws InterruptedException {
 
     logger.log(Level.INFO, "Error path found, starting counterexample check with " + checkerType + ".");

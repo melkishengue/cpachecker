@@ -405,6 +405,34 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
       }
     }
 
+
+    // if entry node, get all parameters and for each create symbolic value if not already created
+    for (AbstractState vaState : postProcessedResult) {
+
+      CFANode node = pCfaEdge.getPredecessor();
+      ExpressionValueVisitor visitor = getVisitor((ValueAnalysisState) vaState);
+
+      try {
+        MemoryLocationValueHandler unknownValueHandler = new SymbolicValueAssigner(
+            Configuration.builder().build());
+
+        if (node instanceof FunctionEntryNode) {
+          FunctionEntryNode entryNode = (FunctionEntryNode) node;
+          for (AParameterDeclaration param : entryNode.getFunctionParameters()) {
+
+            MemoryLocation mem = MemoryLocation.valueOf(param.getQualifiedName());
+            if (((ValueAnalysisState) vaState).getConstants().contains(mem)) {
+              continue;
+            }
+
+            unknownValueHandler.handle(MemoryLocation.valueOf(param.getQualifiedName()), param.getType(), (ValueAnalysisState)vaState, visitor);
+          }
+        }
+      } catch (InvalidConfigurationException e) {
+        break;
+      }
+    }
+
     System.out.println("-----------------------------------------------------------------------------");
     System.out.println("Started post processing.");
     for (AbstractState vaState : postProcessedResult) {

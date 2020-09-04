@@ -29,6 +29,7 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -66,6 +68,7 @@ import org.sosy_lab.cpachecker.cfa.types.c.CNumericTypes;
 import org.sosy_lab.cpachecker.cfa.types.c.CType;
 import org.sosy_lab.cpachecker.core.AnalysisDirection;
 import org.sosy_lab.cpachecker.cpa.arg.ARGState;
+import org.sosy_lab.cpachecker.cpa.constraints.domain.ConstraintsState;
 import org.sosy_lab.cpachecker.cpa.predicate.PredicateAbstractState;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisState;
 import org.sosy_lab.cpachecker.exceptions.CPATransferException;
@@ -75,6 +78,7 @@ import org.sosy_lab.cpachecker.util.AbstractStates;
 import org.sosy_lab.cpachecker.util.Pair;
 import org.sosy_lab.cpachecker.util.predicates.pathformula.SSAMap.SSAMapBuilder;
 import org.sosy_lab.cpachecker.util.predicates.pathformula.SSAMapMerger.MergeResult;
+import org.sosy_lab.cpachecker.util.predicates.pathformula.ctoformula.Constraints;
 import org.sosy_lab.cpachecker.util.predicates.pathformula.ctoformula.CtoFormulaConverter;
 import org.sosy_lab.cpachecker.util.predicates.pathformula.ctoformula.CtoFormulaTypeHandler;
 import org.sosy_lab.cpachecker.util.predicates.pathformula.ctoformula.CtoWpConverter;
@@ -434,6 +438,7 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
   @Override
   public BooleanFormula buildBranchingFormula(Set<ARGState> elementsOnPath, Map<Pair<ARGState,CFAEdge>, PathFormula> parentFormulasOnPath)
       throws CPATransferException, InterruptedException {
+    System.out.println("---Called");
     // build the branching formula that will help us find the real error path
     List<BooleanFormula> branchingFormula = new ArrayList<>();
     for (final ARGState pathElement : elementsOnPath) {
@@ -534,15 +539,10 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
       throws CPATransferException, InterruptedException {
     // build the branching formula that will help us find the real error path
 
-    List<ARGState> listElementsOnPath = new ArrayList(elementsOnPath);
-    if (!isListOfElementsOnPathInReversedOrder) {
-      Collections.sort(listElementsOnPath, Collections.reverseOrder());
-    }
-
-    BooleanFormula lastAssumeEdgeFormula = bfmgr.makeTrue();
+    List<BooleanFormula> branchingFormula = new ArrayList<>();
     // go from last state to root,
     // find first assume edge and return its boolean formula
-    for (final ARGState pathElement : listElementsOnPath) {
+    for (final ARGState pathElement : elementsOnPath) {
       Set<ARGState> children = new HashSet<>(pathElement.getChildren());
       Set<ARGState> childrenOnPath = Sets.intersection(children, elementsOnPath).immutableCopy();
 
@@ -553,19 +553,23 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
         continue;
       }
 
-      // We expect there to be exactly one positive and one negative edge
-      CFAEdge edge = outgoingEdges.get(0);
-      System.out.println("edge = " + edge);
+      CFAEdge edge = Iterables.getOnlyElement(outgoingEdges);
+      // System.out.println("--------------------------------------");
+      // System.out.println("edge = " + edge + ". " + edge.getEdgeType());
 
-      if (!(edge.getEdgeType() == CFAEdgeType.AssumeEdge)) {
+      if ((edge.getEdgeType() == CFAEdgeType.BlankEdge)) {
         continue;
       }
-
+      
       Pair<ARGState,CFAEdge> key = Pair.of(pathElement, edge);
       PathFormula pf = parentFormulasOnPath.get(key);
 
       if(pf == null) {
         PredicateAbstractState pe = AbstractStates.extractStateByType(pathElement, PredicateAbstractState.class);
+        ConstraintsState ca = AbstractStates.extractStateByType(pathElement, ConstraintsState.class);
+
+        // AssumeEdge assumeEdge = (AssumeEdge)edge;
+        // boolean truthValue = assumeEdge.getTruthAssumption();
 
         if (pe == null) {
           logger.log(Level.WARNING, "Cannot find precise error path information without PredicateCPA");
@@ -573,13 +577,18 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
         } else {
           pf = pe.getPathFormula();
         }
+        pf = this.makeEmptyPathFormula(pf);
         pf = this.makeAnd(pf, edge);        // conjunct with edge
+
+        // System.out.println("--> pf = " + pf);
+
+        pf.getFormula();
+
+        branchingFormula.add(pf.getFormula());
       }
-      lastAssumeEdgeFormula = pf.getFormula();
-      break;
     }
 
-    return lastAssumeEdgeFormula;
+    return bfmgr.and(branchingFormula);
   }
 
   /**

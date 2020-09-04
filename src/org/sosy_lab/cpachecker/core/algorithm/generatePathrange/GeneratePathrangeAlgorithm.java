@@ -27,6 +27,7 @@ import static com.google.common.collect.FluentIterable.from;
 import static org.sosy_lab.cpachecker.core.algorithm.bmc.BMCHelper.filterAncestors;
 import static org.sosy_lab.cpachecker.util.AbstractStates.IS_TARGET_STATE_REASON_TIMEOUT;
 
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -51,6 +52,7 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.LogManager;
 import org.sosy_lab.common.time.Timer;
 import org.sosy_lab.cpachecker.cfa.CFA;
+import org.sosy_lab.cpachecker.cfa.model.CFAEdge;
 import org.sosy_lab.cpachecker.core.CPAcheckerResult.Result;
 import org.sosy_lab.cpachecker.core.Specification;
 import org.sosy_lab.cpachecker.core.algorithm.Algorithm;
@@ -76,17 +78,20 @@ import org.sosy_lab.cpachecker.cpa.arg.path.ARGPath;
 import org.sosy_lab.cpachecker.cpa.bam.BAMCPA;
 import org.sosy_lab.cpachecker.cpa.location.LocationState;
 import org.sosy_lab.cpachecker.cpa.predicate.PredicateCPA;
+import org.sosy_lab.cpachecker.cpa.predicate.SlicingAbstractionsUtils;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisState;
 import org.sosy_lab.cpachecker.cpa.value.range.RangeUtils;
 import org.sosy_lab.cpachecker.exceptions.CPAException;
 import org.sosy_lab.cpachecker.exceptions.CPATransferException;
 import org.sosy_lab.cpachecker.util.AbstractStates;
 import org.sosy_lab.cpachecker.util.CPAs;
+import org.sosy_lab.cpachecker.util.predicates.pathformula.PathFormula;
 import org.sosy_lab.cpachecker.util.predicates.pathformula.PathFormulaManager;
 import org.sosy_lab.cpachecker.util.predicates.smt.BooleanFormulaManagerView;
 import org.sosy_lab.cpachecker.util.predicates.smt.FormulaManagerView;
 import org.sosy_lab.cpachecker.util.predicates.smt.Solver;
 import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.Model.ValueAssignment;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
@@ -99,10 +104,13 @@ public class GeneratePathrangeAlgorithm
     CBMC, CPACHECKER, CONCRETE_EXECUTION;
   }
 
+  private final String retvalPattern = "__retval__";
+  private final String tempvalPattern = "__CPAchecker_TMP";
+
   private final Algorithm algorithm;
   private final CounterexampleChecker checker;
   private final LogManager logger;
-  private final ConfigurableProgramAnalysis cpa;
+  protected final ConfigurableProgramAnalysis cpa;
 
   private final FormulaManagerView fmgr;
   private final PathFormulaManager pmgr;
@@ -218,7 +226,7 @@ public class GeneratePathrangeAlgorithm
 
           range = "[" + range + ", " + rootStateEndRange + "]";
         } else {
-          /*if (!rootVAState.getRangeValueInterval().getEndRange().isNull()) {
+          if (!rootVAState.getRangeValueInterval().getEndRange().isNull()) {
             // timeout did not occur, so whole path range has been checked
             // and a end range was defined. So nothing to be left - TODO how to encode a range where nothing is left ?
             String rawRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
@@ -240,10 +248,10 @@ public class GeneratePathrangeAlgorithm
             range = buildRangeValueFromModel(model);
 
             range = "[" + range + ", " + range + "]";
-          }*/
+          }
 
           // timeout did not occur, so whole path range has been checked, output empty range
-          range = "[__done__]";
+          // range = "[__done__]";
         }
         System.out.println("range: " + range);
         RangeUtils.saveRangeToFile("output/pathrange.txt", range);
@@ -272,7 +280,7 @@ public class GeneratePathrangeAlgorithm
       String[] arr = va.getName().split("@", 2);
       String varName = arr[0];
 
-      if (foundModelChunks.contains(varName)) {
+      if (foundModelChunks.contains(varName) || varName.contains(retvalPattern) || varName.contains(tempvalPattern)) {
         continue;
       }
 
@@ -311,9 +319,20 @@ public class GeneratePathrangeAlgorithm
     return constructModelAssignment(statesOnErrorPath, isListOfElementsOnPathInReversedOrder);
   }
 
+  public CFAEdge getChildOnPath(Set<ARGState> elementsOnPath, ARGState argState) {
+    Set<ARGState> children = new HashSet<>(argState.getChildren());
+    if (children.size() == 0) {
+      return null;
+    }
+    Set<ARGState> childrenOnPath = Sets.intersection(children, elementsOnPath).immutableCopy();
+    FluentIterable<CFAEdge> outgoingEdges =
+        from(childrenOnPath).transform(argState::getEdgeToChild);
+
+    return outgoingEdges.get(0);
+  }
+
   public List<ValueAssignment> constructModelAssignment(Set<ARGState> statesOnErrorPath, boolean isListOfElementsOnPathInReversedOrder) throws InterruptedException, CPATransferException {
     // displayPath(statesOnErrorPath);
-
     // get the branchingFormula
     // this formula contains predicates for all branches we took
     // using this we can compute which input values would make the program follow that path
@@ -339,6 +358,8 @@ public class GeneratePathrangeAlgorithm
         // should not occur
         logger.log(Level.WARNING, "Could not create error path information because of inconsistent branching information!");
       }
+
+
 
       model = pProver.getModelAssignments();
     } catch (SolverException e) {
