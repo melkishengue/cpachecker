@@ -46,13 +46,10 @@ import org.sosy_lab.cpachecker.core.Specification;
 import org.sosy_lab.cpachecker.core.algorithm.Algorithm;
 import org.sosy_lab.cpachecker.core.algorithm.bmc.BMCAlgorithm;
 import org.sosy_lab.cpachecker.core.algorithm.bmc.ProverEnvironmentWithFallback;
-import org.sosy_lab.cpachecker.core.counterexample.AssumptionToEdgeAllocator;
 import org.sosy_lab.cpachecker.core.interfaces.ConfigurableProgramAnalysis;
 import org.sosy_lab.cpachecker.core.reachedset.ReachedSet;
-import org.sosy_lab.cpachecker.cpa.arg.ARGCPA;
 import org.sosy_lab.cpachecker.cpa.arg.ARGState;
 import org.sosy_lab.cpachecker.cpa.arg.ARGUtils;
-import org.sosy_lab.cpachecker.cpa.bam.BAMCPA;
 import org.sosy_lab.cpachecker.cpa.location.LocationState;
 import org.sosy_lab.cpachecker.cpa.predicate.PredicateCPA;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisState;
@@ -175,15 +172,15 @@ public class CounterexampleCheckAlgorithmWithTimeout extends CounterexampleCheck
   }
 
   private AlgorithmStatus handleTimeoutException (List<ARGState> errorStates, ReachedSet reached) throws InterruptedException, CPATransferException {
-    List<ValueAssignment> model = constructModelAssignment(errorStates.iterator().next(), true);
-    System.out.println("model = " + model);
+    List<ValueAssignment> model = constructModelAssignment(errorStates.iterator().next());
+    logger.log(Level.INFO, "model = " + model);
     String range = buildRangeValueFromModel(model);
     ValueAnalysisState
         rootVAState = AbstractStates.extractStateByType(reached.getFirstState(), ValueAnalysisState.class);
     String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
 
     range = "[" + range + ", " + rootStateEndRange + "]";
-    System.out.println("range: " + range);
+    logger.log(Level.INFO, "Generated range: " + range);
     RangeUtils.saveRangeToFile("output/pathrange.txt", range);
 
     // analysis has timed out
@@ -197,17 +194,16 @@ public class CounterexampleCheckAlgorithmWithTimeout extends CounterexampleCheck
    * @param errorState where the counterexample ends
    * @param reached all reached states of the analysis, some of the states are part of the CEX path
    */
-  public List<ValueAssignment> constructModelAssignment(ARGState targetState, boolean isListOfElementsOnPathInReversedOrder) throws InterruptedException,
-                                                                                                                                    CPATransferException {
+  public List<ValueAssignment> constructModelAssignment(ARGState targetState) throws InterruptedException, CPATransferException {
     // TODO is it enough to consider only the first target state ?
     // thte first one is the left most target state. So the other target states will be ignored here
     // but included in the output range and later on processed by other analysis
     // get parent of target state
     LocationState loc = AbstractStates.extractStateByType(targetState, LocationState.class);
-    System.out.println("-----------------------------------------------------------------------------");
-    System.out.println("Generating path range for location " + loc);
+    logger.log(Level.INFO, "-----------------------------------------------------------------------------");
+    logger.log(Level.INFO, "Generating path range for location " + loc);
     Set<ARGState> statesOnErrorPath = ARGUtils.getAllStatesOnPathsTo(targetState);
-    return constructModelAssignment(statesOnErrorPath, isListOfElementsOnPathInReversedOrder);
+    return constructModelAssignment(statesOnErrorPath);
   }
 
   public CFAEdge getChildOnPath(Set<ARGState> elementsOnPath, ARGState argState) {
@@ -222,17 +218,17 @@ public class CounterexampleCheckAlgorithmWithTimeout extends CounterexampleCheck
     return outgoingEdges.get(0);
   }
 
-  public List<ValueAssignment> constructModelAssignment(Set<ARGState> statesOnErrorPath, boolean isListOfElementsOnPathInReversedOrder) throws InterruptedException, CPATransferException {
+  public List<ValueAssignment> constructModelAssignment(Set<ARGState> statesOnErrorPath) throws InterruptedException, CPATransferException {
     // displayPath(statesOnErrorPath);
     // get the branchingFormula
     // this formula contains predicates for all branches we took
     // using this we can compute which input values would make the program follow that path
-    BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath, isListOfElementsOnPathInReversedOrder);
+    BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath);
 
-    System.out.println("branchingFormula = " + branchingFormula);
+    logger.log(Level.INFO, "branchingFormula = " + branchingFormula);
 
     if (bfmgr.isTrue(branchingFormula)) {
-      logger.log(Level.WARNING, "Could not create error path because of missing branching information!");
+      logger.log(Level.WARNING, "Could not generate model because of missing branching information!");
       // return;
     }
 
@@ -247,14 +243,12 @@ public class CounterexampleCheckAlgorithmWithTimeout extends CounterexampleCheck
 
       if (!stillSatisfiable) {
         // should not occur
-        logger.log(Level.WARNING, "Could not create error path information because of inconsistent branching information!");
+        logger.log(Level.WARNING, "Could not generate model because of inconsistent branching information!");
       }
-
-
 
       model = pProver.getModelAssignments();
     } catch (SolverException e) {
-      logger.log(Level.WARNING, "Solver could not produce model, cannot create error path.");
+      logger.log(Level.WARNING, "Solver could not produce model, cannot generate path range.");
       logger.logDebugException(e);
     } finally {
       pProver.pop(); // remove branchingFormula

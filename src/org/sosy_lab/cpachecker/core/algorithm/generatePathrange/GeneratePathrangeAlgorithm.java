@@ -336,7 +336,7 @@ public class GeneratePathrangeAlgorithm
     // get the branchingFormula
     // this formula contains predicates for all branches we took
     // using this we can compute which input values would make the program follow that path
-    BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath, isListOfElementsOnPathInReversedOrder);
+    BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath);
 
     System.out.println("branchingFormula = " + branchingFormula);
 

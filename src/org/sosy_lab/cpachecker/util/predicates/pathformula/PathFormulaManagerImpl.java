@@ -530,12 +530,12 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
   }
 
   @Override
-  public BooleanFormula buildBranchingFormulaSinglePath(Set<ARGState> elementsOnPath, boolean isListOfElementsOnPathInReversedOrder)
+  public BooleanFormula buildBranchingFormulaSinglePath(Set<ARGState> elementsOnPath)
       throws CPATransferException, InterruptedException {
-    return buildBranchingFormulaSinglePath(elementsOnPath, ImmutableMap.of(), isListOfElementsOnPathInReversedOrder);
+    return buildBranchingFormulaSinglePath(elementsOnPath, ImmutableMap.of());
   }
 
-  public BooleanFormula buildBranchingFormulaSinglePath(Set<ARGState> elementsOnPath, Map<Pair<ARGState,CFAEdge>, PathFormula> parentFormulasOnPath, boolean isListOfElementsOnPathInReversedOrder)
+  public BooleanFormula buildBranchingFormulaSinglePath(Set<ARGState> elementsOnPath, Map<Pair<ARGState,CFAEdge>, PathFormula> parentFormulasOnPath)
       throws CPATransferException, InterruptedException {
     // build the branching formula that will help us find the real error path
 
