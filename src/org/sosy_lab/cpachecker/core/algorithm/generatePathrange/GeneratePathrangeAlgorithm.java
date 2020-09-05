@@ -28,8 +28,6 @@ import static org.sosy_lab.cpachecker.core.algorithm.bmc.BMCHelper.filterAncesto
 import static org.sosy_lab.cpachecker.util.AbstractStates.IS_TARGET_STATE_REASON_TIMEOUT;
 
 import com.google.common.collect.FluentIterable;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.io.PrintStream;
 import java.util.ArrayList;

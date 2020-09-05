@@ -1,7 +1,7 @@
 extern void __VERIFIER_error() __attribute__ ((__noreturn__));
 
 // int main() {
-// int a; int b;
+// int a; int b; // (main::a=2 main::b=8)
 int main(int a, int b) {
     while (a!=b) {
         if (a>b) {

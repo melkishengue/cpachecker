@@ -49,6 +49,7 @@ import org.sosy_lab.cpachecker.core.algorithm.AssumptionCollectorAlgorithm;
 import org.sosy_lab.cpachecker.core.algorithm.BDDCPARestrictionAlgorithm;
 import org.sosy_lab.cpachecker.core.algorithm.CEGARAlgorithm.CEGARAlgorithmFactory;
 import org.sosy_lab.cpachecker.core.algorithm.CPAAlgorithm;
+import org.sosy_lab.cpachecker.core.algorithm.CPAAlgorithmWithTimeout;
 import org.sosy_lab.cpachecker.core.algorithm.CounterexampleStoreAlgorithm;
 import org.sosy_lab.cpachecker.core.algorithm.CustomInstructionRequirementsExtractingAlgorithm;
 import org.sosy_lab.cpachecker.core.algorithm.ExceptionHandlingAlgorithm;
@@ -419,7 +420,11 @@ public class CoreComponentsFactory {
               aggregatedReachedSets);
 
     } else {
-      algorithm = CPAAlgorithm.create(cpa, logger, config, shutdownNotifier);
+      if (!generateRangeAfterTimeout) {
+        algorithm = CPAAlgorithm.create(cpa, logger, config, shutdownNotifier);
+      } else {
+        algorithm = CPAAlgorithmWithTimeout.create(cpa, logger, config, shutdownNotifier);
+      }
 
       if (constructResidualProgram) {
         algorithm = new ResidualProgramConstructionAlgorithm(cfa, config, logger, shutdownNotifier,
@@ -489,7 +494,11 @@ public class CoreComponentsFactory {
               new BAMCounterexampleCheckAlgorithm(
                   algorithm, cpa, config, logger, shutdownNotifier, specification, cfa);
         } else {
-          if (!generateRangeAfterTimeout) {
+          algorithm =
+              new CounterexampleCheckAlgorithm(
+                  algorithm, cpa, config, specification, logger, shutdownNotifier, cfa);
+
+          /*if (!generateRangeAfterTimeout)
             algorithm =
                 new CounterexampleCheckAlgorithm(
                     algorithm, cpa, config, specification, logger, shutdownNotifier, cfa);
@@ -497,7 +506,7 @@ public class CoreComponentsFactory {
             algorithm =
                 new CounterexampleCheckAlgorithmWithTimeout(
                     algorithm, cpa, config, specification, logger, shutdownNotifier, cfa);
-          }
+          }*/
 
         }
       }

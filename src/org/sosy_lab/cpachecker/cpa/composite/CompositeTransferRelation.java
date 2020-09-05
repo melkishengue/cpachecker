@@ -454,6 +454,8 @@ final class CompositeTransferRelation implements WrapperTransferRelation {
       Precision precision)
       throws CPATransferException, InterruptedException {
 
+    System.out.println("calling");
+
     CompositeState compositeState = (CompositeState) element;
     CompositePrecision compositePrecision = (CompositePrecision) precision;
     List<Collection<? extends AbstractState>> lStrengthenResults = new ArrayList<>(size);
@@ -467,6 +469,8 @@ final class CompositeTransferRelation implements WrapperTransferRelation {
 
       Collection<? extends AbstractState> lResultsList =
           lCurrentTransfer.strengthen(lCurrentElement, otherElements, cfaEdge, lCurrentPrecision);
+
+      System.out.println("After lResultsList = " + lResultsList);
 
       resultCount *= lResultsList.size();
       if (resultCount == 0) {

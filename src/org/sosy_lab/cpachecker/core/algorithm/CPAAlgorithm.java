@@ -72,29 +72,29 @@ import org.sosy_lab.cpachecker.util.statistics.StatisticsWriter;
 
 public class CPAAlgorithm implements Algorithm, StatisticsProvider {
 
-  private static class CPAStatistics implements Statistics {
+  protected static class CPAStatistics implements Statistics {
 
-    private Timer totalTimer         = new Timer();
-    private Timer chooseTimer        = new Timer();
-    private Timer precisionTimer     = new Timer();
-    private Timer transferTimer      = new Timer();
-    private Timer mergeTimer         = new Timer();
-    private Timer stopTimer          = new Timer();
-    private Timer addTimer           = new Timer();
-    private Timer forcedCoveringTimer = new Timer();
+    protected Timer totalTimer         = new Timer();
+    protected Timer chooseTimer        = new Timer();
+    protected Timer precisionTimer     = new Timer();
+    protected Timer transferTimer      = new Timer();
+    protected Timer mergeTimer         = new Timer();
+    protected Timer stopTimer          = new Timer();
+    protected Timer addTimer           = new Timer();
+    protected Timer forcedCoveringTimer = new Timer();
 
-    private int   countIterations   = 0;
-    private int   maxWaitlistSize   = 0;
-    private long  countWaitlistSize = 0;
-    private int   countSuccessors   = 0;
-    private int   maxSuccessors     = 0;
-    private int   countMerge        = 0;
-    private int   countStop         = 0;
-    private int   countBreak        = 0;
+    protected int   countIterations   = 0;
+    protected int   maxWaitlistSize   = 0;
+    protected long  countWaitlistSize = 0;
+    protected int   countSuccessors   = 0;
+    protected int   maxSuccessors     = 0;
+    protected int   countMerge        = 0;
+    protected int   countStop         = 0;
+    protected int   countBreak        = 0;
 
     private Map<String, AbstractStatValue> reachedSetStatistics = new HashMap<>();
 
-    private void stopAllTimers() {
+    protected void stopAllTimers() {
       totalTimer.stopIfRunning();
       chooseTimer.stopIfRunning();
       precisionTimer.stopIfRunning();
@@ -105,7 +105,7 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
       forcedCoveringTimer.stopIfRunning();
     }
 
-    private void updateReachedSetStatistics(Map<String, AbstractStatValue> newStatistics) {
+    protected void updateReachedSetStatistics(Map<String, AbstractStatValue> newStatistics) {
       for (Entry<String, AbstractStatValue> e : newStatistics.entrySet()) {
         String key = e.getKey();
         AbstractStatValue val = e.getValue();
@@ -192,7 +192,7 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
 
     private final ConfigurableProgramAnalysis cpa;
     private final LogManager logger;
-    private final ShutdownNotifier shutdownNotifier;
+    protected final ShutdownNotifier shutdownNotifier;
 
     public CPAAlgorithmFactory(ConfigurableProgramAnalysis cpa, LogManager logger,
         Configuration config, ShutdownNotifier pShutdownNotifier) throws InvalidConfigurationException {
@@ -225,7 +225,7 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
 
   private final ForcedCovering forcedCovering;
 
-  private final CPAStatistics               stats = new CPAStatistics();
+  protected final CPAStatistics               stats = new CPAStatistics();
 
   private final TransferRelation transferRelation;
   private final MergeOperator mergeOperator;
@@ -234,11 +234,11 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
 
   private final LogManager                  logger;
 
-  private final ShutdownNotifier                   shutdownNotifier;
+  protected final ShutdownNotifier                   shutdownNotifier;
 
-  private final AlgorithmStatus status;
+  protected final AlgorithmStatus status;
 
-  private CPAAlgorithm(ConfigurableProgramAnalysis cpa, LogManager logger,
+  protected CPAAlgorithm(ConfigurableProgramAnalysis cpa, LogManager logger,
       ShutdownNotifier pShutdownNotifier,
       ForcedCovering pForcedCovering,
       boolean pIsImprecise) {
@@ -264,7 +264,7 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
     }
   }
 
-  private AlgorithmStatus run0(final ReachedSet reachedSet) throws CPAException, InterruptedException {
+  protected AlgorithmStatus run0(final ReachedSet reachedSet) throws CPAException, InterruptedException {
     while (reachedSet.hasWaitingState()) {
       shutdownNotifier.shutdownIfNecessary();
 
@@ -308,7 +308,7 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
    * @param reachedSet The reached set.
    * @return true if analysis should terminate, false if analysis should continue with next state
    */
-  private boolean handleState(
+  protected boolean handleState(
       final AbstractState state, final Precision precision, final ReachedSet reachedSet)
       throws CPAException, InterruptedException {
     logger.log(Level.ALL, "Current state is", state, "with precision", precision);
