@@ -203,7 +203,14 @@ public class CounterexampleCheckAlgorithmWithTimeout extends CounterexampleCheck
     logger.log(Level.INFO, "-----------------------------------------------------------------------------");
     logger.log(Level.INFO, "Generating path range for location " + loc);
     Set<ARGState> statesOnErrorPath = ARGUtils.getAllStatesOnPathsTo(targetState);
-    return constructModelAssignment(statesOnErrorPath);
+
+    List<ValueAssignment> res = constructModelAssignment(statesOnErrorPath);
+    for (ValueAssignment va : res) {
+      System.out.println("va = " + va);
+      System.out.println("va formula = " + va.getValueAsFormula());
+    }
+
+    return res;
   }
 
   public CFAEdge getChildOnPath(Set<ARGState> elementsOnPath, ARGState argState) {

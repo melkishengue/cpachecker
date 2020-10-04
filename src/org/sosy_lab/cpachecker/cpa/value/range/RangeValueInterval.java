@@ -26,6 +26,7 @@ public class RangeValueInterval {
   RangeValue startRange;
   RangeValue endRange;
   boolean isEmpty;
+  String rawRangeInterval;
 
   public boolean isLeftUnbounded() {
     return this.getStartRange().isNull;
@@ -91,6 +92,10 @@ public class RangeValueInterval {
     this.startRange = pStartRange;
     this.endRange = pEndRange;
     this.isEmpty = false;
+  }
+
+  public String getRawRangeInterval () {
+    return "[" + this.getStartRange().getRawRange() + ", " + this.getEndRange().getRawRange() + "]";
   }
 
   @Override

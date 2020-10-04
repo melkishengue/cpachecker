@@ -28,6 +28,7 @@ import static com.google.common.collect.FluentIterable.from;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -215,13 +216,19 @@ public class CPAAlgorithmWithTimeout extends CPAAlgorithm {
   private AlgorithmStatus handleTimeoutException (List<ARGState> errorStates, ReachedSet reached) throws InterruptedException,
                                                                                                          CPATransferException {
     List<ValueAssignment> model = constructModelAssignment(errorStates.iterator().next());
-    logger.log(Level.INFO, "model = " + model);
-    String range = buildRangeValueFromModel(model);
     ValueAnalysisState
         rootVAState = AbstractStates.extractStateByType(reached.getFirstState(), ValueAnalysisState.class);
-    String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
+    logger.log(Level.INFO, "model = " + model);
+    String range = "";
+    if (model.size() == 0) {
+      range = rootVAState.getInitialRangeValueInterval().getRawRangeInterval();
+    } else {
+      range = buildRangeValueFromModel(model);
+      String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
 
-    range = "[" + range + ", " + rootStateEndRange + "]";
+      range = "[" + range + ", " + rootStateEndRange + "]";
+    }
+
     logger.log(Level.INFO, "Generated range: " + range);
     RangeUtils.saveRangeToFile("output/pathrange.txt", range);
 
@@ -245,7 +252,14 @@ public class CPAAlgorithmWithTimeout extends CPAAlgorithm {
     logger.log(Level.INFO, "-----------------------------------------------------------------------------");
     logger.log(Level.INFO, "Generating path range for location " + loc);
     Set<ARGState> statesOnErrorPath = ARGUtils.getAllStatesOnPathsTo(targetState);
-    return constructModelAssignment(statesOnErrorPath);
+    List<ValueAssignment> res = constructModelAssignment(statesOnErrorPath);
+    for (ValueAssignment va : res) {
+      System.out.println("va = " + va);
+      System.out.println("va formula = " + va.getAssignmentAsFormula());
+      System.out.println("type = " + va.getValue().getClass());
+    }
+
+    return res;
   }
 
   public CFAEdge getChildOnPath(Set<ARGState> elementsOnPath, ARGState argState) {
