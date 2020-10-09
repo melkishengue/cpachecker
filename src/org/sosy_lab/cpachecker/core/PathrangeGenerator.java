@@ -21,50 +21,29 @@
  *  CPAchecker web page:
  *    http://cpachecker.sosy-lab.org
  */
-package org.sosy_lab.cpachecker.core.algorithm;
+package org.sosy_lab.cpachecker.core;
 
-import static com.google.common.collect.FluentIterable.from;
-
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.sosy_lab.common.ShutdownNotifier;
-import org.sosy_lab.common.configuration.ClassOption;
-import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.LogManager;
-import org.sosy_lab.cpachecker.cfa.CFA;
 import org.sosy_lab.cpachecker.cfa.model.CFAEdge;
-import org.sosy_lab.cpachecker.core.Specification;
-import org.sosy_lab.cpachecker.core.algorithm.CPAAlgorithm.CPAAlgorithmFactory;
+import org.sosy_lab.cpachecker.core.algorithm.Algorithm.AlgorithmStatus;
 import org.sosy_lab.cpachecker.core.algorithm.bmc.BMCAlgorithm;
 import org.sosy_lab.cpachecker.core.algorithm.bmc.ProverEnvironmentWithFallback;
-import org.sosy_lab.cpachecker.core.interfaces.AbstractState;
 import org.sosy_lab.cpachecker.core.interfaces.ConfigurableProgramAnalysis;
-import org.sosy_lab.cpachecker.core.interfaces.ForcedCovering;
-import org.sosy_lab.cpachecker.core.interfaces.Precision;
 import org.sosy_lab.cpachecker.core.reachedset.ReachedSet;
 import org.sosy_lab.cpachecker.cpa.arg.ARGState;
 import org.sosy_lab.cpachecker.cpa.arg.ARGUtils;
-import org.sosy_lab.cpachecker.cpa.arg.path.ARGPath;
 import org.sosy_lab.cpachecker.cpa.location.LocationState;
 import org.sosy_lab.cpachecker.cpa.predicate.PredicateCPA;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisState;
 import org.sosy_lab.cpachecker.cpa.value.range.RangeUtils;
-import org.sosy_lab.cpachecker.exceptions.CPAException;
 import org.sosy_lab.cpachecker.exceptions.CPATransferException;
 import org.sosy_lab.cpachecker.util.AbstractStates;
 import org.sosy_lab.cpachecker.util.CPAs;
@@ -77,35 +56,27 @@ import org.sosy_lab.java_smt.api.Model.ValueAssignment;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
 
-public class CPAAlgorithmWithTimeout extends CPAAlgorithm {
+public class PathrangeGenerator {
   private final String retvalPattern = "__retval__";
   private final String tempvalPattern = "__CPAchecker_TMP";
-
-  private final LogManager logger;
-  protected final ConfigurableProgramAnalysis cpa;
-
   private final FormulaManagerView fmgr;
   private final PathFormulaManager pmgr;
   private final BooleanFormulaManagerView bfmgr;
   private final Solver solver;
   private final ProverEnvironmentWithFallback pProver;
+  ConfigurableProgramAnalysis cpa;
+  LogManager logger;
+  ReachedSet reached;
 
-  public CPAAlgorithmWithTimeout(
-      ConfigurableProgramAnalysis pCpa, LogManager pLogger,
-      ShutdownNotifier pShutdownNotifier,
-      ForcedCovering pForcedCovering,
-      boolean pIsImprecise) {
-
-
-    super(pCpa, pLogger, pShutdownNotifier, pForcedCovering, pIsImprecise);
-
-    this.logger = pLogger;
+  public PathrangeGenerator(ConfigurableProgramAnalysis pCpa, ReachedSet reached, LogManager pLogger) {
     this.cpa = pCpa;
+    this.logger = pLogger;
+    this.reached = reached;
 
     @SuppressWarnings("resource")
     PredicateCPA predCpa = null;
     try {
-      predCpa = CPAs.retrieveCPAOrFail(cpa, PredicateCPA.class, BMCAlgorithm.class);
+      predCpa = CPAs.retrieveCPAOrFail(this.cpa, PredicateCPA.class, BMCAlgorithm.class);
     } catch (InvalidConfigurationException pE) {
       pE.printStackTrace();
     }
@@ -116,110 +87,7 @@ public class CPAAlgorithmWithTimeout extends CPAAlgorithm {
     pProver = new ProverEnvironmentWithFallback(solver, ProverOptions.GENERATE_MODELS);
   }
 
-  @Options(prefix = "cpa")
-  public static class CPAAlgorithmWithTimeoutFactory implements AlgorithmFactory {
-
-    @Option(
-        secure = true,
-        description = "Which strategy to use for forced coverings (empty for none)",
-        name = "forcedCovering")
-    @ClassOption(packagePrefix = "org.sosy_lab.cpachecker")
-    private ForcedCovering.@Nullable Factory forcedCoveringClass = null;
-
-    @Option(secure=true, description="Do not report 'False' result, return UNKNOWN instead. "
-        + " Useful for incomplete analysis with no counterexample checking.")
-    private boolean reportFalseAsUnknown = false;
-
-    private final ForcedCovering forcedCovering;
-
-    private final ConfigurableProgramAnalysis cpa;
-    private final LogManager logger;
-    protected final ShutdownNotifier shutdownNotifier;
-
-    public CPAAlgorithmWithTimeoutFactory(ConfigurableProgramAnalysis cpa, LogManager logger,
-                               Configuration config, ShutdownNotifier pShutdownNotifier) throws InvalidConfigurationException {
-
-      config.inject(this);
-      this.cpa = cpa;
-      this.logger = logger;
-      this.shutdownNotifier = pShutdownNotifier;
-
-      if (forcedCoveringClass != null) {
-        forcedCovering = forcedCoveringClass.create(config, logger, cpa);
-      } else {
-        forcedCovering = null;
-      }
-
-    }
-
-    @Override
-    public CPAAlgorithmWithTimeout newInstance() {
-      return new CPAAlgorithmWithTimeout(cpa, logger, shutdownNotifier, forcedCovering, reportFalseAsUnknown);
-    }
-  }
-
-  public static CPAAlgorithm create(ConfigurableProgramAnalysis cpa, LogManager logger,
-                                    Configuration config, ShutdownNotifier pShutdownNotifier) throws InvalidConfigurationException {
-
-    return new CPAAlgorithmWithTimeout.CPAAlgorithmWithTimeoutFactory(cpa, logger, config, pShutdownNotifier).newInstance();
-  }
-
-  @Override
-  public AlgorithmStatus run(final ReachedSet reachedSet) throws CPAException, InterruptedException {
-    stats.totalTimer.start();
-    try {
-      return run0(reachedSet);
-    } finally {
-      stats.stopAllTimers();
-      stats.updateReachedSetStatistics(reachedSet.getStatistics());
-    }
-  }
-
-  @Override
-  protected AlgorithmStatus run0(final ReachedSet reachedSet) throws CPAException, InterruptedException {
-    while (reachedSet.hasWaitingState()) {
-      shutdownNotifier.shutdownIfNecessary();
-
-      stats.countIterations++;
-
-      // Pick next state using strategy
-      // BFS, DFS or top sort according to the configuration
-      int size = reachedSet.getWaitlist().size();
-      if (size >= stats.maxWaitlistSize) {
-        stats.maxWaitlistSize = size;
-      }
-      stats.countWaitlistSize += size;
-
-      stats.chooseTimer.start();
-      final AbstractState state = reachedSet.popFromWaitlist();
-      final Precision precision = reachedSet.getPrecision(state);
-      stats.chooseTimer.stop();
-
-      logger.log(Level.FINER, "Retrieved state from waitlist");
-      try {
-        if (handleState(state, precision, reachedSet)) {
-          // Prec operator requested break
-          handleTimeoutException (Collections.singletonList((ARGState)state), reachedSet);
-          return status;
-        }
-      } catch (Exception e) {
-        // re-add the old state to the waitlist, there might be unhandled successors left
-        // that otherwise would be forgotten (which would be unsound)
-        reachedSet.reAddToWaitlist(state);
-        throw e;
-      }
-
-    }
-
-    // timeout did not occur, generate default pathrange
-    String range = "[__done__]";
-    logger.log(Level.INFO, "Generated range: " + range);
-    RangeUtils.saveRangeToFile("output/pathrange.txt", range);
-
-    return status;
-  }
-
-  private AlgorithmStatus handleTimeoutException (List<ARGState> errorStates, ReachedSet reached) throws InterruptedException,
+  public void generatePathrange (List<ARGState> errorStates) throws InterruptedException,
                                                                                                          CPATransferException {
     List<ValueAssignment> model = constructModelAssignment(errorStates.iterator().next());
     logger.log(Level.INFO, "model = " + model);
@@ -231,18 +99,8 @@ public class CPAAlgorithmWithTimeout extends CPAAlgorithm {
     range = "[" + range + ", " + rootStateEndRange + "]";
     logger.log(Level.INFO, "Generated range: " + range);
     RangeUtils.saveRangeToFile("output/pathrange.txt", range);
-
-    // analysis has timed out
-    return AlgorithmStatus.UNSOUND_AND_IMPRECISE;
   }
 
-  /**
-   * check whether there is a feasible counterexample in the reachedset.
-   *
-   * @param pChecker executes a precise counterexample-check
-   * @param errorState where the counterexample ends
-   * @param reached all reached states of the analysis, some of the states are part of the CEX path
-   */
   public List<ValueAssignment> constructModelAssignment(ARGState targetState) throws InterruptedException, CPATransferException {
     // TODO is it enough to consider only the first target state ?
     // thte first one is the left most target state. So the other target states will be ignored here
@@ -255,36 +113,6 @@ public class CPAAlgorithmWithTimeout extends CPAAlgorithm {
     return constructModelAssignment(statesOnErrorPath);
   }
 
-  public CFAEdge getChildOnPath(Set<ARGState> elementsOnPath, ARGState argState) {
-    Set<ARGState> children = new HashSet<>(argState.getChildren());
-    if (children.size() == 0) {
-      return null;
-    }
-    Set<ARGState> childrenOnPath = Sets.intersection(children, elementsOnPath).immutableCopy();
-    FluentIterable<CFAEdge> outgoingEdges =
-        from(childrenOnPath).transform(argState::getEdgeToChild);
-
-    return outgoingEdges.get(0);
-  }
-
-  private String constructPath(Set<ARGState> statesOnErrorPath) {
-    StringBuilder sb = new StringBuilder();
-    List<ARGState> list = new ArrayList<>(statesOnErrorPath);
-
-    for (int i = list.size() - 1; i >= 0 ; i--) {
-      ARGState state = list.get(i);
-      LocationState loc = AbstractStates.extractStateByType(state, LocationState.class);
-
-      Iterable<CFAEdge> edges = loc.getIngoingEdges();
-      Iterator<CFAEdge> iter = edges.iterator();
-      if (iter.hasNext()) {
-        sb.append("(" + iter.next().getCode() + ") --> ");
-      }
-    }
-
-    return sb.toString() + "[TIMEOUT]";
-  }
-
   public List<ValueAssignment> constructModelAssignment(Set<ARGState> statesOnErrorPath) throws InterruptedException, CPATransferException {
     logger.log(Level.INFO, "Timedout path: " + constructPath(statesOnErrorPath));
     // get the branchingFormula
@@ -292,21 +120,25 @@ public class CPAAlgorithmWithTimeout extends CPAAlgorithm {
     // using this we can compute which input values would make the program follow that path
     BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath);
 
-    // logger.log(Level.INFO, "branchingFormula = " + branchingFormula);
+    logger.log(Level.INFO, "branchingFormula = " + branchingFormula);
 
     if (bfmgr.isTrue(branchingFormula)) {
       logger.log(Level.WARNING, "Could not generate model because of missing branching information!");
       // return;
     }
 
+    logger.log(Level.INFO, "After 1");
+
     // add formula to solver environment
     pProver.push(branchingFormula);
 
     List<ValueAssignment> model = new ArrayList();
+    logger.log(Level.INFO, "After 2");
     try {
       // need to ask solver for satisfiability again,
       // otherwise model doesn't contain new predicates
       boolean stillSatisfiable = !pProver.isUnsat();
+      logger.log(Level.INFO, "After 3");
 
       if (!stillSatisfiable) {
         // should not occur
@@ -315,8 +147,11 @@ public class CPAAlgorithmWithTimeout extends CPAAlgorithm {
 
       model = pProver.getModelAssignments();
     } catch (SolverException e) {
+      logger.log(Level.INFO, "After 5");
       logger.log(Level.WARNING, "Solver could not produce model, cannot generate path range.");
       logger.logDebugException(e);
+    } catch (InterruptedException e) {
+      logger.log(Level.INFO, "After 4 " + e);
     } finally {
       pProver.pop(); // remove branchingFormula
     }
@@ -360,4 +195,23 @@ public class CPAAlgorithmWithTimeout extends CPAAlgorithm {
 
     return range;
   }
+
+  private String constructPath(Set<ARGState> statesOnErrorPath) {
+    StringBuilder sb = new StringBuilder();
+    List<ARGState> list = new ArrayList<>(statesOnErrorPath);
+
+    for (int i = list.size() - 1; i >= 0 ; i--) {
+      ARGState state = list.get(i);
+      LocationState loc = AbstractStates.extractStateByType(state, LocationState.class);
+
+      Iterable<CFAEdge> edges = loc.getIngoingEdges();
+      Iterator<CFAEdge> iter = edges.iterator();
+      if (iter.hasNext()) {
+        sb.append("(" + iter.next().getCode() + ") --> ");
+      }
+    }
+
+    return sb.toString() + "[TIMEOUT]";
+  }
+
 }

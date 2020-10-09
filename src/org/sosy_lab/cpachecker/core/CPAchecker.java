@@ -241,6 +241,7 @@ public class CPAchecker {
   private final ShutdownManager shutdownManager;
   private final ShutdownNotifier shutdownNotifier;
   private final CoreComponentsFactory factory;
+  private ConfigurableProgramAnalysis cpa;
 
   // The content of this String is read from a file that is created by the
   // ant task "init".
@@ -327,6 +328,10 @@ public class CPAchecker {
             pConfiguration, pLogManager, shutdownNotifier, new AggregatedReachedSets());
   }
 
+  public ConfigurableProgramAnalysis getCPA() {
+    return cpa;
+  }
+
   public CPAcheckerResult run(
       List<String> programDenotation, Set<SpecificationProperty> properties) {
     checkArgument(!programDenotation.isEmpty());
@@ -360,7 +365,7 @@ public class CPAchecker {
         GlobalInfo.getInstance().storeCFA(cfa);
         shutdownNotifier.shutdownIfNecessary();
 
-        ConfigurableProgramAnalysis cpa;
+        // ConfigurableProgramAnalysis cpa;
         stats.cpaCreationTime.start();
         try {
           specification =
@@ -455,6 +460,7 @@ public class CPAchecker {
       logger.logUserException(Level.SEVERE, e, "Invalid configuration");
 
     } catch (InterruptedException e) {
+      System.out.println("jklsjfksdjflksjdflsdöf");
       // CPAchecker must exit because it was asked to
       // we return normally instead of propagating the exception
       // so we can return the partial result we have so far

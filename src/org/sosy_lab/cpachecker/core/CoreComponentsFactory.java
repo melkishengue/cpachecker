@@ -420,11 +420,13 @@ public class CoreComponentsFactory {
               aggregatedReachedSets);
 
     } else {
-      if (!generateRangeAfterTimeout) {
+      algorithm = CPAAlgorithm.create(cpa, logger, config, shutdownNotifier);
+
+      /*if (!generateRangeAfterTimeout) {
         algorithm = CPAAlgorithm.create(cpa, logger, config, shutdownNotifier);
       } else {
         algorithm = CPAAlgorithmWithTimeout.create(cpa, logger, config, shutdownNotifier);
-      }
+      }*/
 
       if (constructResidualProgram) {
         algorithm = new ResidualProgramConstructionAlgorithm(cfa, config, logger, shutdownNotifier,

@@ -24,6 +24,7 @@
 package org.sosy_lab.cpachecker.cmdline;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.FluentIterable.from;
 import static java.util.stream.Collectors.toList;
 import static org.sosy_lab.common.collect.Collections3.transformedImmutableSetCopy;
 import static org.sosy_lab.common.io.DuplicateOutputStream.mergeStreams;
@@ -79,10 +80,14 @@ import org.sosy_lab.cpachecker.cmdline.CmdLineArguments.InvalidCmdlineArgumentEx
 import org.sosy_lab.cpachecker.core.CPAchecker;
 import org.sosy_lab.cpachecker.core.CPAcheckerResult;
 import org.sosy_lab.cpachecker.core.CPAcheckerResult.Result;
+import org.sosy_lab.cpachecker.core.PathrangeGenerator;
 import org.sosy_lab.cpachecker.core.algorithm.pcc.ProofGenerator;
 import org.sosy_lab.cpachecker.core.counterexample.ReportGenerator;
+import org.sosy_lab.cpachecker.core.reachedset.ReachedSet;
+import org.sosy_lab.cpachecker.cpa.arg.ARGState;
 import org.sosy_lab.cpachecker.cpa.automaton.AutomatonGraphmlParser;
 import org.sosy_lab.cpachecker.cpa.testtargets.TestTargetType;
+import org.sosy_lab.cpachecker.util.AbstractStates;
 import org.sosy_lab.cpachecker.util.Property;
 import org.sosy_lab.cpachecker.util.Property.CommonCoverageType;
 import org.sosy_lab.cpachecker.util.Property.CommonPropertyType;
@@ -196,7 +201,7 @@ public class CPAMain {
     Thread.interrupted(); // clear interrupted flag
 
     try {
-      printResultAndStatistics(result, outputDirectory, options, reportGenerator, logManager);
+      printResultAndStatistics(result, outputDirectory, options, reportGenerator, logManager, cpachecker);
     } catch (IOException e) {
       logManager.logUserException(Level.WARNING, e, "Could not write statistics to file");
     }
@@ -711,7 +716,8 @@ public class CPAMain {
       String outputDirectory,
       MainOptions options,
       ReportGenerator reportGenerator,
-      LogManager logManager)
+      LogManager logManager,
+      CPAchecker cpachecker)
       throws IOException {
 
     // setup output streams
@@ -758,6 +764,23 @@ public class CPAMain {
 
     } finally {
       closer.close();
+    }
+
+    try {
+      List<ARGState> errorStates =
+          from(mResult.getReached().getWaitlist())
+              .transform(AbstractStates.toState(ARGState.class))
+              // .filter(AbstractStates.IS_TARGET_STATE)
+              // .filter(Predicates.not(Predicates.in(checkedTargetStates)))
+              .toList();
+
+      System.out.println("targetStates = " + errorStates);
+
+      PathrangeGenerator pathrangeGenerator = new PathrangeGenerator(cpachecker.getCPA(),
+          (ReachedSet) mResult.getReached(), logManager);
+      pathrangeGenerator.generatePathrange(errorStates);
+    } catch (Exception e ) {
+      System.out.println("e = " + e);
     }
 
     // export report
