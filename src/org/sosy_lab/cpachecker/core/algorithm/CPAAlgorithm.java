@@ -61,7 +61,11 @@ import org.sosy_lab.cpachecker.core.interfaces.TransferRelation;
 import org.sosy_lab.cpachecker.core.reachedset.ReachedSet;
 import org.sosy_lab.cpachecker.core.reachedset.UnmodifiableReachedSet;
 import org.sosy_lab.cpachecker.cpa.arg.ARGMergeJoinCPAEnabledAnalysis;
+import org.sosy_lab.cpachecker.cpa.arg.ARGState;
+import org.sosy_lab.cpachecker.cpa.arg.ARGUtils;
+import org.sosy_lab.cpachecker.cpa.arg.path.ARGPath;
 import org.sosy_lab.cpachecker.exceptions.CPAException;
+import org.sosy_lab.cpachecker.exceptions.CPATimeoutException;
 import org.sosy_lab.cpachecker.util.AbstractStates;
 import org.sosy_lab.cpachecker.util.Pair;
 import org.sosy_lab.cpachecker.util.statistics.AbstractStatValue;
@@ -70,7 +74,11 @@ import org.sosy_lab.cpachecker.util.statistics.StatHist;
 import org.sosy_lab.cpachecker.util.statistics.StatInt;
 import org.sosy_lab.cpachecker.util.statistics.StatisticsWriter;
 
+@Options
 public class CPAAlgorithm implements Algorithm, StatisticsProvider {
+
+  @Option(secure=true, description="Generate a path range of visited paths when timeout exception through MonitorCPA occurs")
+  private boolean generateRangeAfterTimeout = false;
 
   protected static class CPAStatistics implements Statistics {
 
@@ -287,6 +295,15 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
       try {
         if (handleState(state, precision, reachedSet)) {
           // Prec operator requested break
+          if (true) {
+            // create one element list of path where exception occurred
+            ArrayList<ARGPath> paths = new ArrayList();
+            ARGPath pathToError = ARGUtils.getOnePathTo((ARGState)state);
+
+            paths.add(pathToError);
+
+            throw new CPATimeoutException("Timeout exception occurred", paths);
+          }
           return status;
         }
       } catch (Exception e) {

@@ -120,25 +120,21 @@ public class PathrangeGenerator {
     // using this we can compute which input values would make the program follow that path
     BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath);
 
-    logger.log(Level.INFO, "branchingFormula = " + branchingFormula);
+    // logger.log(Level.INFO, "branchingFormula = " + branchingFormula);
 
     if (bfmgr.isTrue(branchingFormula)) {
       logger.log(Level.WARNING, "Could not generate model because of missing branching information!");
       // return;
     }
 
-    logger.log(Level.INFO, "After 1");
-
     // add formula to solver environment
     pProver.push(branchingFormula);
 
     List<ValueAssignment> model = new ArrayList();
-    logger.log(Level.INFO, "After 2");
     try {
       // need to ask solver for satisfiability again,
       // otherwise model doesn't contain new predicates
       boolean stillSatisfiable = !pProver.isUnsat();
-      logger.log(Level.INFO, "After 3");
 
       if (!stillSatisfiable) {
         // should not occur
@@ -147,11 +143,9 @@ public class PathrangeGenerator {
 
       model = pProver.getModelAssignments();
     } catch (SolverException e) {
-      logger.log(Level.INFO, "After 5");
       logger.log(Level.WARNING, "Solver could not produce model, cannot generate path range.");
       logger.logDebugException(e);
     } catch (InterruptedException e) {
-      logger.log(Level.INFO, "After 4 " + e);
     } finally {
       pProver.pop(); // remove branchingFormula
     }
@@ -162,16 +156,16 @@ public class PathrangeGenerator {
   private String buildRangeValueFromModel(List<ValueAssignment> model) {
     ArrayList<String> foundModelChunks = new ArrayList();
 
-    ArrayList<ValueAssignment> modelCopy = new ArrayList(model);
+    /*ArrayList<ValueAssignment> modelCopy = new ArrayList(model);
 
     Collections.sort(modelCopy, new Comparator<ValueAssignment>(){
       public int compare(ValueAssignment va1, ValueAssignment va2){
         return va1.getName().compareTo(va2.getName());
       }
-    });
+    });*/
 
     ArrayList rangeChunksList = new ArrayList<String>();
-    for(ValueAssignment va : modelCopy) {
+    for(ValueAssignment va : model) {
 
       String[] arr = va.getName().split("@", 2);
       String varName = arr[0];

@@ -97,7 +97,7 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
   protected ValueAnalysisState handleAssumption(AExpression expression, boolean truthValue)
       throws UnrecognizedCodeException {
 
-    System.out.println("-----------------------------------------------------------------------------");
+    // System.out.println("-----------------------------------------------------------------------------");
 
     if (stats != null) {
       stats.incrementAssumptions();
@@ -158,7 +158,7 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
             // update range value interval start if new value
             if (val.isExplicitlyKnown()) {
-              System.out.println("updating " + rangeString + " variable " + memoryLocationVariableName + " with value " + val);
+              // System.out.println("updating " + rangeString + " variable " + memoryLocationVariableName + " with value " + val);
               duplicate1.assignConstant(location, val, v.getType());
             } else {
               System.out.println("Could not evaluate expression because of missing information");
@@ -197,10 +197,10 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
             // update range value interval start if new value
             if (val.isExplicitlyKnown()) {
-              System.out.println("updating " + rangeString + " variable " + memoryLocationVariableName + " with value " + val);
+              // System.out.println("updating " + rangeString + " variable " + memoryLocationVariableName + " with value " + val);
               duplicate2.assignConstant(location, val, v.getType());
             } else {
-              System.out.println("Could not evaluate expression because of missing information");
+              // System.out.println("Could not evaluate expression because of missing information");
             }
           }
         }
@@ -209,32 +209,32 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
             representsBoolean(getExpressionValue(expression, booleanType, evv2), false);
       }
 
-      System.out.println(
+      /*System.out.println(
           expression
               + " Value: "
               + truthValue
               + ", intervalStartImpliesValue="
               + intervalStartImpliesValue
               + " and intervalEndImpliesValue="
-              + intervalEndImpliesValue);
+              + intervalEndImpliesValue);*/
 
       if (!intervalStartImpliesValue && !startRangeValue.isNull()) {
         if (truthValue) {
-          System.out.println("Then case." + element.getRangeValueInterval());
+          // System.out.println("Then case." + element.getRangeValueInterval());
           return element;
         }
 
-        System.out.println("Returning nothing (Then case).");
+        // System.out.println("Returning nothing (Then case).");
         return null;
       }
 
       if (intervalEndImpliesValue && !endRangeValue.isNull()) {
         if (!truthValue) {
-          System.out.println("Else case. New range is " + element.getRangeValueInterval());
+          // System.out.println("Else case. New range is " + element.getRangeValueInterval());
           return element;
         }
 
-        System.out.println("Returning nothing (Else case).");
+        // System.out.println("Returning nothing (Else case).");
         return null;
       }
 
@@ -277,7 +277,7 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
       String message =
           truthValue ? "Symbolic: Then case." : "Symbolic: Else case.";
-      System.out.println(message + " New range is " +element.getRangeValueInterval());
+      // System.out.println(message + " New range is " +element.getRangeValueInterval());
 
       return element;
     } else if (representsBoolean(value, truthValue)) {
@@ -299,12 +299,12 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
           truthValue
           ? "The condition is true --> if bloc visited."
           : "The condition is false --> else bloc visited.";
-      System.out.println(message + " New range is " + valueAnalysisState.getRangeValueInterval());
+      // System.out.println(message + " New range is " + valueAnalysisState.getRangeValueInterval());
 
       return valueAnalysisState;
     } else {
       // assumption not fulfilled
-      System.out.println("The condition is not satisfied. Bloc is not visited.");
+      // System.out.println("The condition is not satisfied. Bloc is not visited.");
 
       // this is the case where the condition is not satisfied, the bloc is not visited at all.
       // Exple a=1, b=2, a<b ? else branch will come here
@@ -433,10 +433,10 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
       }
     }
 
-    System.out.println("-----------------------------------------------------------------------------");
-    System.out.println("Started post processing.");
+    // System.out.println("-----------------------------------------------------------------------------");
+    // System.out.println("Started post processing.");
     for (AbstractState vaState : postProcessedResult) {
-      System.out.println("-------------------------------------");
+      // System.out.println("-------------------------------------");
       vaState = updateRangeInterval((ValueAnalysisState)vaState, pCfaEdge);
     }
 
@@ -483,11 +483,11 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
         // update range value interval start if new value
         if (val.isExplicitlyKnown()) {
-          System.out.println("updating " + rangeString + " variable " + memoryLocationVariableName + " with value " + val);
+          // System.out.println("updating " + rangeString + " variable " + memoryLocationVariableName + " with value " + val);
           ValueAndType valueAndType = new ValueAndType(val, type);
           range.getVariablesMapFullyQualified().put(location, valueAndType);
         } else {
-          System.out.println(rangeString + " range Variable " + memoryLocationVariableName + " value is UNKNOWN");
+          // System.out.println(rangeString + " range Variable " + memoryLocationVariableName + " value is UNKNOWN");
         }
       }
     }
@@ -503,7 +503,7 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
 
     CExpression expression = (CExpression) svv.visit(constantSymbolicExpression);
 
-    System.out.println("expression = " + expression);
+    // System.out.println("expression = " + expression);
 
     // evaluate created expression
     Value val = getExpressionValue(expression, type, evv);

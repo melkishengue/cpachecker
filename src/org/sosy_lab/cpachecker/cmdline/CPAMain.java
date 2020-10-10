@@ -766,7 +766,7 @@ public class CPAMain {
       closer.close();
     }
 
-    try {
+    /*try {
       List<ARGState> errorStates =
           from(mResult.getReached().getWaitlist())
               .transform(AbstractStates.toState(ARGState.class))
@@ -781,7 +781,7 @@ public class CPAMain {
       pathrangeGenerator.generatePathrange(errorStates);
     } catch (Exception e ) {
       System.out.println("e = " + e);
-    }
+    }*/
 
     // export report
     if (mResult.getResult() != Result.NOT_YET_STARTED) {

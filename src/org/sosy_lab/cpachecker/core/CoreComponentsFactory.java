@@ -132,8 +132,8 @@ public class CoreComponentsFactory {
   @Option(secure=true, description="use a second model checking run (e.g., with CBMC or a different CPAchecker configuration) to double-check counter-examples")
   private boolean checkCounterexamples = false;
 
-  @Option(secure=true, description="Generate a path range of visited paths when timeout exception through MonitorCPA occurs")
-  private boolean generateRangeAfterTimeout = false;
+  /* @Option(secure=true, description="Generate a path range of visited paths when timeout exception through MonitorCPA occurs")
+  private boolean generateRangeAfterTimeout = false; */
 
 
 

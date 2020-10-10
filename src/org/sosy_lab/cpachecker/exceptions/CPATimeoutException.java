@@ -28,6 +28,7 @@ package org.sosy_lab.cpachecker.exceptions;
     import java.util.List;
 
     import org.checkerframework.checker.nullness.qual.Nullable;
+    import org.sosy_lab.cpachecker.core.reachedset.ReachedSet;
     import org.sosy_lab.cpachecker.cpa.arg.path.ARGPath;
 
 /**

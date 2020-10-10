@@ -26,6 +26,7 @@ package org.sosy_lab.cpachecker.core.algorithm;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,6 +42,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.LogManager;
+import org.sosy_lab.cpachecker.core.PathrangeGenerator;
 import org.sosy_lab.cpachecker.core.algorithm.ParallelAlgorithm.ReachedSetUpdateListener;
 import org.sosy_lab.cpachecker.core.algorithm.ParallelAlgorithm.ReachedSetUpdater;
 import org.sosy_lab.cpachecker.core.interfaces.ConfigurableProgramAnalysis;
@@ -123,6 +125,7 @@ public class ExceptionHandlingAlgorithm
   private final LogManager logger;
   private final ShutdownNotifier shutdownNotifier;
   private final ExceptionHandlingOptions options;
+  private final ConfigurableProgramAnalysis cpa;
 
   private ExceptionHandlingAlgorithm(Algorithm pAlgorithm, ConfigurableProgramAnalysis pCpa,
       ExceptionHandlingOptions pOptions, LogManager pLogger, ShutdownNotifier pShutdownNotifier) throws InvalidConfigurationException {
@@ -134,6 +137,8 @@ public class ExceptionHandlingAlgorithm
     if (!(pCpa instanceof ARGCPA || pCpa instanceof BAMCPA)) {
       throw new InvalidConfigurationException("ARG CPA needed for counterexample check");
     }
+
+    cpa = pCpa;
   }
 
   public static Algorithm create(
@@ -180,7 +185,6 @@ public class ExceptionHandlingAlgorithm
         // mark the analysis as unsound and continue searching for errors on other
         // paths through the program
       } catch (InfeasibleCounterexampleException e) {
-        System.out.println("InfeasibleCounterexampleException occurred.");
         // we don't want to continue, so no handling is necessary
         if (!options.continueAfterInfeasibleError) {
           throw e;
@@ -216,7 +220,18 @@ public class ExceptionHandlingAlgorithm
         // handle occurrence of unsupported code. We can still check all remaining
         // paths in the program for errors
       } catch (CPATimeoutException e) {
-        System.out.println("CPATimeoutException occurred in ExceptionHandlingAlgorithm.");
+        System.out.println("Timeout exception occurred, generating path range");
+
+        try {
+          PathrangeGenerator pathrangeGenerator = new PathrangeGenerator(cpa,
+              (ReachedSet) reached, logger);
+          ARGPath errorPath = e.getErrorPaths().iterator().next();
+
+          pathrangeGenerator.generatePathrange(Lists.reverse(errorPath.asStatesList()));
+        } catch (Exception e2 ) {
+          System.out.println("e2 = " + e2);
+        }
+
         throw e;
       } catch (UnsupportedCodeException e) {
         // we don't want to continue, so no handling is necessary
