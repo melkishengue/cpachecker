@@ -74,11 +74,7 @@ import org.sosy_lab.cpachecker.util.statistics.StatHist;
 import org.sosy_lab.cpachecker.util.statistics.StatInt;
 import org.sosy_lab.cpachecker.util.statistics.StatisticsWriter;
 
-@Options
 public class CPAAlgorithm implements Algorithm, StatisticsProvider {
-
-  @Option(secure=true, description="Generate a path range of visited paths when timeout exception through MonitorCPA occurs")
-  private boolean generateRangeAfterTimeout = false;
 
   protected static class CPAStatistics implements Statistics {
 
@@ -196,6 +192,9 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
         + " Useful for incomplete analysis with no counterexample checking.")
     private boolean reportFalseAsUnknown = false;
 
+    @Option(secure=true, description="generate a path range after a timeout exception has occurred")
+    private boolean generateRangeAfterTimeout = false;
+
     private final ForcedCovering forcedCovering;
 
     private final ConfigurableProgramAnalysis cpa;
@@ -206,6 +205,7 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
         Configuration config, ShutdownNotifier pShutdownNotifier) throws InvalidConfigurationException {
 
       config.inject(this);
+      System.out.println("this.generateRangeAfterTimeout = " + this.generateRangeAfterTimeout);
       this.cpa = cpa;
       this.logger = logger;
       this.shutdownNotifier = pShutdownNotifier;
@@ -220,7 +220,7 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
 
     @Override
     public CPAAlgorithm newInstance() {
-      return new CPAAlgorithm(cpa, logger, shutdownNotifier, forcedCovering, reportFalseAsUnknown);
+      return new CPAAlgorithm(cpa, logger, shutdownNotifier, forcedCovering, reportFalseAsUnknown, generateRangeAfterTimeout);
     }
   }
 
@@ -239,6 +239,7 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
   private final MergeOperator mergeOperator;
   private final StopOperator stopOperator;
   private final PrecisionAdjustment precisionAdjustment;
+  private final boolean generateRangeAfterTimeout;
 
   private final LogManager                  logger;
 
@@ -249,7 +250,7 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
   protected CPAAlgorithm(ConfigurableProgramAnalysis cpa, LogManager logger,
       ShutdownNotifier pShutdownNotifier,
       ForcedCovering pForcedCovering,
-      boolean pIsImprecise) {
+      boolean pIsImprecise, boolean pGenerateRangeAfterTimeout) {
 
     transferRelation = cpa.getTransferRelation();
     mergeOperator = cpa.getMergeOperator();
@@ -258,6 +259,7 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
     this.logger = logger;
     this.shutdownNotifier = pShutdownNotifier;
     this.forcedCovering = pForcedCovering;
+    this.generateRangeAfterTimeout = pGenerateRangeAfterTimeout;
     status = AlgorithmStatus.SOUND_AND_PRECISE.withPrecise(!pIsImprecise);
   }
 
@@ -295,15 +297,15 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
       try {
         if (handleState(state, precision, reachedSet)) {
           // Prec operator requested break
-          if (true) {
+          if (this.generateRangeAfterTimeout) {
             // create one element list of path where exception occurred
             ArrayList<ARGPath> paths = new ArrayList();
             ARGPath pathToError = ARGUtils.getOnePathTo((ARGState)state);
-
             paths.add(pathToError);
 
             throw new CPATimeoutException("Timeout exception occurred", paths);
           }
+
           return status;
         }
       } catch (Exception e) {
@@ -312,7 +314,6 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
         reachedSet.reAddToWaitlist(state);
         throw e;
       }
-
     }
 
     return status;

@@ -39,12 +39,7 @@ public class RangeUtils {
     try {
       // String fileName = "output/pathrange.txt";
       File f = new File(fileName);
-      if (f.createNewFile()) {
-        System.out.println("File created: " + f.getName());
-      } else {
-        System.out.println("File already exists.");
-      }
-
+      f.createNewFile();
       FileWriter fw = new FileWriter(fileName);
       fw.write(content);
       fw.close();

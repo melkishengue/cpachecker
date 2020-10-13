@@ -87,10 +87,9 @@ public class PathrangeGenerator {
     pProver = new ProverEnvironmentWithFallback(solver, ProverOptions.GENERATE_MODELS);
   }
 
-  public void generatePathrange (List<ARGState> errorStates) throws InterruptedException,
-                                                                                                         CPATransferException {
+  public void generatePathrange (List<ARGState> errorStates) throws InterruptedException, CPATransferException, SolverException {
     List<ValueAssignment> model = constructModelAssignment(errorStates.iterator().next());
-    logger.log(Level.INFO, "model = " + model);
+    // logger.log(Level.INFO, "model = " + model);
     String range = buildRangeValueFromModel(model);
     ValueAnalysisState
         rootVAState = AbstractStates.extractStateByType(reached.getFirstState(), ValueAnalysisState.class);
@@ -101,19 +100,19 @@ public class PathrangeGenerator {
     RangeUtils.saveRangeToFile("output/pathrange.txt", range);
   }
 
-  public List<ValueAssignment> constructModelAssignment(ARGState targetState) throws InterruptedException, CPATransferException {
+  public List<ValueAssignment> constructModelAssignment(ARGState targetState) throws InterruptedException, CPATransferException, SolverException {
     // TODO is it enough to consider only the first target state ?
     // thte first one is the left most target state. So the other target states will be ignored here
     // but included in the output range and later on processed by other analysis
     // get parent of target state
     LocationState loc = AbstractStates.extractStateByType(targetState, LocationState.class);
-    logger.log(Level.INFO, "-----------------------------------------------------------------------------");
+    // logger.log(Level.INFO, "-----------------------------------------------------------------------------");
     logger.log(Level.INFO, "Generating path range for location " + loc);
     Set<ARGState> statesOnErrorPath = ARGUtils.getAllStatesOnPathsTo(targetState);
     return constructModelAssignment(statesOnErrorPath);
   }
 
-  public List<ValueAssignment> constructModelAssignment(Set<ARGState> statesOnErrorPath) throws InterruptedException, CPATransferException {
+  public List<ValueAssignment> constructModelAssignment(Set<ARGState> statesOnErrorPath) throws InterruptedException, CPATransferException, SolverException {
     logger.log(Level.INFO, "Timedout path: " + constructPath(statesOnErrorPath));
     // get the branchingFormula
     // this formula contains predicates for all branches we took
@@ -121,11 +120,6 @@ public class PathrangeGenerator {
     BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath);
 
     // logger.log(Level.INFO, "branchingFormula = " + branchingFormula);
-
-    if (bfmgr.isTrue(branchingFormula)) {
-      logger.log(Level.WARNING, "Could not generate model because of missing branching information!");
-      // return;
-    }
 
     // add formula to solver environment
     pProver.push(branchingFormula);
@@ -138,13 +132,15 @@ public class PathrangeGenerator {
 
       if (!stillSatisfiable) {
         // should not occur
-        logger.log(Level.WARNING, "Could not generate model because of inconsistent branching information!");
+        // logger.log(Level.WARNING, "Could not generate model because of inconsistent branching information!");
+        throw new SolverException("No model available");
       }
 
       model = pProver.getModelAssignments();
     } catch (SolverException e) {
       logger.log(Level.WARNING, "Solver could not produce model, cannot generate path range.");
       logger.logDebugException(e);
+      throw(e);
     } catch (InterruptedException e) {
     } finally {
       pProver.pop(); // remove branchingFormula

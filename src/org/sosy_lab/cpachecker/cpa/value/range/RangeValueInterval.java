@@ -75,6 +75,9 @@ public class RangeValueInterval {
 
       String[] arrOfStr = rawRangeValueNoBraces.split(Pattern.quote(","), 5);
 
+      System.out.println(arrOfStr[0]);
+      System.out.println(arrOfStr[1]);
+
       String rawStartRangeValue = arrOfStr[0].trim();
       String rawEndRangeValue = arrOfStr[1].trim();
 

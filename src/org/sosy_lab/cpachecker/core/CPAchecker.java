@@ -460,7 +460,6 @@ public class CPAchecker {
       logger.logUserException(Level.SEVERE, e, "Invalid configuration");
 
     } catch (InterruptedException e) {
-      System.out.println("jklsjfksdjflksjdflsdöf");
       // CPAchecker must exit because it was asked to
       // we return normally instead of propagating the exception
       // so we can return the partial result we have so far

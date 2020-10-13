@@ -249,6 +249,11 @@ public class CPAMain {
     @FileOption(Type.OPTIONAL_INPUT_FILE)
     private @Nullable Path terminationConfig = null;
 
+    @Option(secure=true, name="rangedAnalysis.config",
+        description="ranged analysis config file.")
+    @FileOption(Type.OPTIONAL_INPUT_FILE)
+    private @Nullable Path rangedAnalsisConfig = null;
+
     @Option(
       secure = true,
       name = CmdLineArguments.PRINT_USED_OPTIONS_OPTION,
@@ -330,6 +335,8 @@ public class CPAMain {
 
     // Read property file if present and adjust cmdline options
     Set<SpecificationProperty> properties = handlePropertyFile(cmdLineOptions);
+
+    System.out.println("CmdLineArguments.CONFIGURATION_FILE_OPTION = " + CmdLineArguments.CONFIGURATION_FILE_OPTION);
 
     // get name of config file (may be null)
     // and remove this from the list of options (it's not a real option)
@@ -478,8 +485,11 @@ public class CPAMain {
       Map<String, String> cmdLineOptions,
       Set<SpecificationProperty> pProperties)
       throws InvalidConfigurationException, IOException {
+
     Set<Property> properties =
         transformedImmutableSetCopy(pProperties, SpecificationProperty::getProperty);
+
+    System.out.println("properties = " + properties);
 
     final Path alternateConfigFile;
 
@@ -496,7 +506,8 @@ public class CPAMain {
         throw new InvalidConfigurationException(
             "Unsupported combination of properties: " + properties);
       }
-      alternateConfigFile = check(options.memcleanupConfig, "memory cleanup", "memorycleanup.config");
+      alternateConfigFile =
+          check(options.memcleanupConfig, "memory cleanup", "memorycleanup.config");
     } else if (properties.contains(CommonPropertyType.OVERFLOW)) {
       if (properties.size() != 1) {
         // Overflow property cannot be checked with others in combination
@@ -525,8 +536,10 @@ public class CPAMain {
           .setOption("testcase.targets.type", TARGET_TYPES.get(properties.iterator().next()).name())
           .build();
     } else {
-      alternateConfigFile = null;
+      alternateConfigFile = check(options.rangedAnalsisConfig, "rangedanalysis", "rangedAnalysis.config");
     }
+
+    System.out.println("alternateConfigFile = " + alternateConfigFile);
 
     if (alternateConfigFile != null) {
       return Configuration.builder()

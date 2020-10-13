@@ -24,6 +24,8 @@
 package org.sosy_lab.cpachecker.core.algorithm;
 
 
+import static java.util.stream.Collectors.toCollection;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -36,6 +38,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
+import org.eclipse.cdt.core.model.CModelException;
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -54,12 +57,15 @@ import org.sosy_lab.cpachecker.cpa.arg.ARGState;
 import org.sosy_lab.cpachecker.cpa.arg.ARGUtils;
 import org.sosy_lab.cpachecker.cpa.arg.path.ARGPath;
 import org.sosy_lab.cpachecker.cpa.bam.BAMCPA;
+import org.sosy_lab.cpachecker.cpa.value.range.RangeUtils;
 import org.sosy_lab.cpachecker.exceptions.CPAEnabledAnalysisPropertyViolationException;
 import org.sosy_lab.cpachecker.exceptions.CPAException;
 import org.sosy_lab.cpachecker.exceptions.CPATimeoutException;
 import org.sosy_lab.cpachecker.exceptions.InfeasibleCounterexampleException;
 import org.sosy_lab.cpachecker.exceptions.RefinementFailedException;
 import org.sosy_lab.cpachecker.exceptions.UnsupportedCodeException;
+import org.sosy_lab.cpachecker.util.AbstractStates;
+import org.sosy_lab.java_smt.api.SolverException;
 
 public class ExceptionHandlingAlgorithm
     implements Algorithm, StatisticsProvider, ReachedSetUpdater {
@@ -111,7 +117,7 @@ public class ExceptionHandlingAlgorithm
 
     @Option(
         secure = true,
-        name = "analysis.generateRangeAfterTimeout",
+        name = "pathrange.generateRangeAfterTimeout",
         description = "generate a path range after a timeout exception has occurred"
     )
     private boolean generateRangeAfterTimeout = false;
@@ -138,6 +144,11 @@ public class ExceptionHandlingAlgorithm
       throw new InvalidConfigurationException("ARG CPA needed for counterexample check");
     }
 
+    if (options.generateRangeAfterTimeout) {
+      // file will be overwritten if timeout occurs
+      RangeUtils.saveRangeToFile("output/pathrange.txt", "[__done__]");
+    }
+
     cpa = pCpa;
   }
 
@@ -155,7 +166,8 @@ public class ExceptionHandlingAlgorithm
 
     if ((options.continueAfterInfeasibleError && pCheckCounterexamples)
         || (options.continueAfterFailedRefinement && pUseCEGAR)
-        || options.continueAfterUnsupportedCode) {
+        || options.continueAfterUnsupportedCode
+        || options.generateRangeAfterTimeout) {
       return new ExceptionHandlingAlgorithm(pAlgorithm, pCpa, options, pLogger, pShutdownNotifier);
     }
 
@@ -217,22 +229,28 @@ public class ExceptionHandlingAlgorithm
 
         status = handleExceptionWithErrorPath(reached, status, lastState, true);
 
-        // handle occurrence of unsupported code. We can still check all remaining
-        // paths in the program for errors
+
       } catch (CPATimeoutException e) {
-        System.out.println("Timeout exception occurred, generating path range");
+        if (options.generateRangeAfterTimeout) {
+          System.out.println("Timeout exception occurred, generating path range");
 
-        try {
-          PathrangeGenerator pathrangeGenerator = new PathrangeGenerator(cpa,
-              (ReachedSet) reached, logger);
-          ARGPath errorPath = e.getErrorPaths().iterator().next();
-
-          pathrangeGenerator.generatePathrange(Lists.reverse(errorPath.asStatesList()));
-        } catch (Exception e2 ) {
-          System.out.println("e2 = " + e2);
+          PathrangeGenerator pathrangeGenerator = new PathrangeGenerator(cpa, reached, logger);
+          boolean modelExists = false;
+          ArrayList<ARGState> errorStates = e.getErrorPaths().iterator().next().asStatesList().stream().collect(toCollection(ArrayList::new));
+          do {
+            try {
+              pathrangeGenerator.generatePathrange(Lists.reverse(errorStates));
+              modelExists = true;
+            } catch (SolverException e3 ) {
+              logger.log(Level.WARNING, "No model found, backtracking.");
+              errorStates.remove(errorStates.size() - 1);
+            }
+          } while (!modelExists);
         }
 
-        throw e;
+        return status;
+      // handle occurrence of unsupported code. We can still check all remaining
+      // paths in the program for errors
       } catch (UnsupportedCodeException e) {
         // we don't want to continue, so no handling is necessary
         if (!options.continueAfterUnsupportedCode || e.getParentState() == null) {
