@@ -146,7 +146,7 @@ public class ExceptionHandlingAlgorithm
 
     /* if (options.generateRangeAfterTimeout) {
       // file will be overwritten if timeout occurs
-      RangeUtils.saveRangeToFile("output/pathrange.txt", "[__done__]");
+
     }*/
 
     cpa = pCpa;
@@ -231,22 +231,14 @@ public class ExceptionHandlingAlgorithm
 
 
       } catch (CPATimeoutException e) {
-        if (options.generateRangeAfterTimeout) {
+        /*if (options.generateRangeAfterTimeout) {
           System.out.println("Timeout exception occurred, generating path range");
 
           PathrangeGenerator pathrangeGenerator = new PathrangeGenerator(cpa, reached, logger);
           boolean modelExists = false;
           ArrayList<ARGState> errorStates = e.getErrorPaths().iterator().next().asStatesList().stream().collect(toCollection(ArrayList::new));
-          do {
-            try {
-              pathrangeGenerator.generatePathrange(Lists.reverse(errorStates));
-              modelExists = true;
-            } catch (SolverException e3 ) {
-              logger.log(Level.WARNING, "No model found, backtracking.");
-              errorStates.remove(errorStates.size() - 1);
-            }
-          } while (!modelExists);
-        }
+          pathrangeGenerator.generatePathrange(Lists.reverse(errorStates));
+        }*/
 
         return status;
       // handle occurrence of unsupported code. We can still check all remaining

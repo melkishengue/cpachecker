@@ -23,21 +23,30 @@
  */
 package org.sosy_lab.cpachecker.core;
 
+import static com.google.common.collect.FluentIterable.from;
+
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.log.LogManager;
+import org.sosy_lab.cpachecker.cfa.model.AssumeEdge;
 import org.sosy_lab.cpachecker.cfa.model.CFAEdge;
 import org.sosy_lab.cpachecker.core.algorithm.Algorithm.AlgorithmStatus;
 import org.sosy_lab.cpachecker.core.algorithm.bmc.BMCAlgorithm;
 import org.sosy_lab.cpachecker.core.algorithm.bmc.ProverEnvironmentWithFallback;
 import org.sosy_lab.cpachecker.core.interfaces.ConfigurableProgramAnalysis;
 import org.sosy_lab.cpachecker.core.reachedset.ReachedSet;
+import org.sosy_lab.cpachecker.core.reachedset.UnmodifiableReachedSet;
 import org.sosy_lab.cpachecker.cpa.arg.ARGState;
 import org.sosy_lab.cpachecker.cpa.arg.ARGUtils;
 import org.sosy_lab.cpachecker.cpa.location.LocationState;
@@ -66,12 +75,12 @@ public class PathrangeGenerator {
   private final ProverEnvironmentWithFallback pProver;
   ConfigurableProgramAnalysis cpa;
   LogManager logger;
-  ReachedSet reached;
+  UnmodifiableReachedSet reached;
 
-  public PathrangeGenerator(ConfigurableProgramAnalysis pCpa, ReachedSet reached, LogManager pLogger) {
+  public PathrangeGenerator(ConfigurableProgramAnalysis pCpa, UnmodifiableReachedSet pReached, LogManager pLogger) {
     this.cpa = pCpa;
     this.logger = pLogger;
-    this.reached = reached;
+    this.reached = pReached;
 
     @SuppressWarnings("resource")
     PredicateCPA predCpa = null;
@@ -87,9 +96,19 @@ public class PathrangeGenerator {
     pProver = new ProverEnvironmentWithFallback(solver, ProverOptions.GENERATE_MODELS);
   }
 
-  public void generatePathrange (List<ARGState> errorStates) throws InterruptedException, CPATransferException, SolverException {
-    List<ValueAssignment> model = constructModelAssignment(errorStates.iterator().next());
-    // logger.log(Level.INFO, "model = " + model);
+  public void generatePathrange (List<ARGState> errorStates) throws InterruptedException, CPATransferException {
+    boolean modelExists = false;
+    List<ValueAssignment> model = new ArrayList<>();
+    do {
+      try {
+        model = constructModelAssignment(errorStates.iterator().next());
+        modelExists = true;
+      } catch (SolverException e ) {
+        logger.log(Level.WARNING, "No model found, backtracking.");
+        errorStates.remove(errorStates.size() - 1);
+      }
+    } while (!modelExists);
+
     String range = buildRangeValueFromModel(model);
     ValueAnalysisState
         rootVAState = AbstractStates.extractStateByType(reached.getFirstState(), ValueAnalysisState.class);
@@ -113,7 +132,7 @@ public class PathrangeGenerator {
   }
 
   public List<ValueAssignment> constructModelAssignment(Set<ARGState> statesOnErrorPath) throws InterruptedException, CPATransferException, SolverException {
-    logger.log(Level.INFO, "Timedout path: " + constructPath(statesOnErrorPath));
+    logger.log(Level.INFO, "Timedout path: " + PathrangeGenerator.constructPath(statesOnErrorPath));
     // get the branchingFormula
     // this formula contains predicates for all branches we took
     // using this we can compute which input values would make the program follow that path
@@ -186,7 +205,7 @@ public class PathrangeGenerator {
     return range;
   }
 
-  private String constructPath(Set<ARGState> statesOnErrorPath) {
+  public static String constructPath(Collection<ARGState> statesOnErrorPath) {
     StringBuilder sb = new StringBuilder();
     List<ARGState> list = new ArrayList<>(statesOnErrorPath);
 
@@ -202,6 +221,48 @@ public class PathrangeGenerator {
     }
 
     return sb.toString() + "[TIMEOUT]";
+  }
+
+  public static ArrayList<ARGState> generateLastPathFromReachedSet(UnmodifiableReachedSet pReached) {
+    ARGState pathElement = (ARGState)pReached.getFirstState();
+    boolean endOfPath = false;
+    ArrayList<ARGState> statesOnLastPath = new ArrayList<>();
+
+    ARGState next = pathElement;
+
+    HashSet<ARGState> reached = new HashSet(pReached.asCollection());
+    do {
+      Set<ARGState> children = new HashSet<>(pathElement.getChildren());
+      Set<ARGState> childrenInReached = Sets.intersection(children, reached).immutableCopy();
+
+      FluentIterable<CFAEdge> outgoingEdges =
+          from(childrenInReached).transform(pathElement::getEdgeToChild);
+
+      if (outgoingEdges.size() == 0) {
+        endOfPath = true;
+      } else {
+        if (outgoingEdges.size() == 1) {
+          // add element to list and continue
+          next = childrenInReached.iterator().next();
+        } else {
+          // element has 2 children
+          // TODO is it possible that we have 2 outgoing edges which are not assume edges ?
+          // if yes: for (AssumeEdge currentEdge : outgoingEdges.filter(AssumeEdge.class))
+          for (ARGState child : childrenInReached) {
+            AssumeEdge edge = (AssumeEdge) pathElement.getEdgeToChild(child);
+            if (edge.getTruthAssumption()) {
+              next = child;
+              break;
+            }
+          }
+        }
+      }
+
+      statesOnLastPath.add(pathElement);
+      pathElement = next;
+    } while (!endOfPath);
+
+    return statesOnLastPath;
   }
 
 }

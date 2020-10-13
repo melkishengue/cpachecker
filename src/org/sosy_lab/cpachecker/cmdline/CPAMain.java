@@ -25,6 +25,7 @@ package org.sosy_lab.cpachecker.cmdline;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.FluentIterable.from;
+import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toList;
 import static org.sosy_lab.common.collect.Collections3.transformedImmutableSetCopy;
 import static org.sosy_lab.common.io.DuplicateOutputStream.mergeStreams;
@@ -33,9 +34,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closer;
 import com.google.common.io.MoreFiles;
@@ -48,8 +51,10 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -76,6 +81,8 @@ import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.common.log.LogManager;
 import org.sosy_lab.common.log.LoggingOptions;
 import org.sosy_lab.cpachecker.cfa.Language;
+import org.sosy_lab.cpachecker.cfa.model.AssumeEdge;
+import org.sosy_lab.cpachecker.cfa.model.CFAEdge;
 import org.sosy_lab.cpachecker.cmdline.CmdLineArguments.InvalidCmdlineArgumentException;
 import org.sosy_lab.cpachecker.core.CPAchecker;
 import org.sosy_lab.cpachecker.core.CPAcheckerResult;
@@ -85,8 +92,11 @@ import org.sosy_lab.cpachecker.core.algorithm.pcc.ProofGenerator;
 import org.sosy_lab.cpachecker.core.counterexample.ReportGenerator;
 import org.sosy_lab.cpachecker.core.reachedset.ReachedSet;
 import org.sosy_lab.cpachecker.cpa.arg.ARGState;
+import org.sosy_lab.cpachecker.cpa.arg.ARGUtils;
 import org.sosy_lab.cpachecker.cpa.automaton.AutomatonGraphmlParser;
 import org.sosy_lab.cpachecker.cpa.testtargets.TestTargetType;
+import org.sosy_lab.cpachecker.cpa.value.range.RangeUtils;
+import org.sosy_lab.cpachecker.exceptions.CPATransferException;
 import org.sosy_lab.cpachecker.util.AbstractStates;
 import org.sosy_lab.cpachecker.util.Property;
 import org.sosy_lab.cpachecker.util.Property.CommonCoverageType;
@@ -97,6 +107,7 @@ import org.sosy_lab.cpachecker.util.SpecificationProperty;
 import org.sosy_lab.cpachecker.util.automaton.AutomatonGraphmlCommon.WitnessType;
 import org.sosy_lab.cpachecker.util.globalinfo.GlobalInfo;
 import org.sosy_lab.cpachecker.util.resources.ResourceLimitChecker;
+import org.sosy_lab.java_smt.api.SolverException;
 
 public class CPAMain {
 
@@ -766,28 +777,28 @@ public class CPAMain {
       closer.close();
     }
 
-    /*try {
-      List<ARGState> errorStates =
-          from(mResult.getReached().getWaitlist())
-              .transform(AbstractStates.toState(ARGState.class))
-              // .filter(AbstractStates.IS_TARGET_STATE)
-              // .filter(Predicates.not(Predicates.in(checkedTargetStates)))
-              .toList();
+    /*
+    at the end,
+    - check if target states exists. If yes, last path was not successfully verified --> open range. If no closed range.
+     */
 
-      System.out.println("targetStates = " + errorStates);
+    /*String pathrangeFile = "output/pathrange.txt";
+    if (!RangeUtils.rangeFileExists(pathrangeFile)) {*/
+      ArrayList<ARGState> statesOnLastPath = PathrangeGenerator.generateLastPathFromReachedSet(mResult.getReached());
+      PathrangeGenerator pathrangeGenerator = new PathrangeGenerator(cpachecker.getCPA(), mResult.getReached(), logManager);
+      try {
+        pathrangeGenerator.generatePathrange(Lists.reverse(statesOnLastPath));
+      } catch(Exception e) {
+        System.out.println("e = " + e);
+      }
+    // }
 
-      PathrangeGenerator pathrangeGenerator = new PathrangeGenerator(cpachecker.getCPA(),
-          (ReachedSet) mResult.getReached(), logManager);
-      pathrangeGenerator.generatePathrange(errorStates);
-    } catch (Exception e ) {
-      System.out.println("e = " + e);
-    }*/
+      // export report
+      if (mResult.getResult() != Result.NOT_YET_STARTED) {
+        reportGenerator.generate(
+            mResult.getResult(), mResult.getCfa(), mResult.getReached(), statistics.toString());
+      }
 
-    // export report
-    if (mResult.getResult() != Result.NOT_YET_STARTED) {
-      reportGenerator.generate(
-          mResult.getResult(), mResult.getCfa(), mResult.getReached(), statistics.toString());
-    }
   }
 
   @SuppressFBWarnings(
