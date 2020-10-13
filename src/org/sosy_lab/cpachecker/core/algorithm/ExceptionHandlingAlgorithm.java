@@ -144,10 +144,10 @@ public class ExceptionHandlingAlgorithm
       throw new InvalidConfigurationException("ARG CPA needed for counterexample check");
     }
 
-    if (options.generateRangeAfterTimeout) {
+    /* if (options.generateRangeAfterTimeout) {
       // file will be overwritten if timeout occurs
       RangeUtils.saveRangeToFile("output/pathrange.txt", "[__done__]");
-    }
+    }*/
 
     cpa = pCpa;
   }
