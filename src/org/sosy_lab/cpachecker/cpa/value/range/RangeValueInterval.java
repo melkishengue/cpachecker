@@ -26,13 +26,15 @@ public class RangeValueInterval {
   RangeValue startRange;
   RangeValue endRange;
   boolean isEmpty;
+  boolean isLeftUnbounded = false;
+  boolean isRightUnbounded = false;
 
   public boolean isLeftUnbounded() {
-    return this.getStartRange().isNull;
+    return this.isLeftUnbounded;
   }
 
   public boolean isRightUnbounded() {
-    return this.getEndRange().isNull;
+    return this.isRightUnbounded;
   }
 
   public RangeValue getStartRange() {
@@ -68,15 +70,19 @@ public class RangeValueInterval {
   public RangeValueInterval(String rawRangeValue) {
     this.isEmpty = rawRangeValue.contains(this.EMPTY_RANGE_MARKER);
     if (!this.isEmpty) {
+      this.isLeftUnbounded = rawRangeValue.charAt(0) == ']';
+      this.isRightUnbounded = rawRangeValue.charAt(rawRangeValue.length() - 1) == '[';
+
+      System.out.println("rawRangeValue = " + rawRangeValue);
+      System.out.println("--> isLeftUnbounded = " + this.isLeftUnbounded);
+      System.out.println("--> isRightUnbounded = " + this.isRightUnbounded);
+
       String rawRangeValueNoBraces = rawRangeValue;
       // remove eventual first and last braces
       rawRangeValueNoBraces = rawRangeValueNoBraces.substring(0, rawRangeValueNoBraces.length() - 1);
       rawRangeValueNoBraces = rawRangeValueNoBraces.substring(1, rawRangeValueNoBraces.length());
 
       String[] arrOfStr = rawRangeValueNoBraces.split(Pattern.quote(","), 5);
-
-      System.out.println(arrOfStr[0]);
-      System.out.println(arrOfStr[1]);
 
       String rawStartRangeValue = arrOfStr[0].trim();
       String rawEndRangeValue = arrOfStr[1].trim();

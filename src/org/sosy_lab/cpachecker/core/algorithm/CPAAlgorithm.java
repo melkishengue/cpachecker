@@ -297,14 +297,14 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
       try {
         if (handleState(state, precision, reachedSet)) {
           // Prec operator requested break
-          if (this.generateRangeAfterTimeout) {
+          /* if (this.generateRangeAfterTimeout) {
             // create one element list of path where exception occurred
             ArrayList<ARGPath> paths = new ArrayList();
             ARGPath pathToError = ARGUtils.getOnePathTo((ARGState)state);
             paths.add(pathToError);
 
             throw new CPATimeoutException("Timeout exception occurred", paths);
-          }
+          } */
 
           return status;
         }

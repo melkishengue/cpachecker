@@ -166,7 +166,6 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
           }
         }
 
-        // System.out.println("duplicate1 = " + duplicate1);
         intervalStartImpliesValue =
             representsBoolean(getExpressionValue(expression, booleanType, evv1), false);
       }
@@ -218,8 +217,13 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
               + " and intervalEndImpliesValue="
               + intervalEndImpliesValue);*/
 
-      if (!intervalStartImpliesValue && !startRangeValue.isNull()) {
+      if ((!intervalStartImpliesValue && !startRangeValue.isNull())) {
+
+
         if (truthValue) {
+          if (rvi1.isLeftUnbounded()) {
+            return null;
+          }
           // System.out.println("Then case." + element.getRangeValueInterval());
           return element;
         }

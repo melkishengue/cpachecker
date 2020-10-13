@@ -14,6 +14,11 @@ int main(int a, int b) {
         }
     }
 
+    /*if (a == b) {
+        ERROR: __VERIFIER_error();
+    }*/
+    
+
     return a; 
 }
 

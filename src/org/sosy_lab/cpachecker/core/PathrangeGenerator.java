@@ -97,6 +97,14 @@ public class PathrangeGenerator {
   }
 
   public void generatePathrange (List<ARGState> errorStates) throws InterruptedException, CPATransferException {
+    // check if error occurred
+    Set<ARGState> targetStates =
+        from(errorStates)
+            .transform(AbstractStates.toState(ARGState.class))
+            .filter(AbstractStates.IS_TARGET_STATE)
+            .toSet();
+
+    boolean errorOccurred = targetStates.size() > 0;
     boolean modelExists = false;
     List<ValueAssignment> model = new ArrayList<>();
     do {
@@ -109,12 +117,16 @@ public class PathrangeGenerator {
       }
     } while (!modelExists);
 
-    String range = buildRangeValueFromModel(model);
+    String rangeValue = buildRangeValueFromModel(model);
     ValueAnalysisState
         rootVAState = AbstractStates.extractStateByType(reached.getFirstState(), ValueAnalysisState.class);
     String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
 
-    range = "[" + range + ", " + rootStateEndRange + "]";
+    // TODO: handle closing bracket here
+    String range = (!errorOccurred ? "]" : "[") + rangeValue + ", " + rootStateEndRange + "]";
+    if (errorOccurred) {
+      logger.log(Level.INFO, "Path " + rangeValue + " could not be verified entirely, thus included in generated range");
+    }
     logger.log(Level.INFO, "Generated range: " + range);
     RangeUtils.saveRangeToFile("output/pathrange.txt", range);
   }
