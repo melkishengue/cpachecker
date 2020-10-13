@@ -218,12 +218,10 @@ public class ValueAnalysisRangedTransferRelation extends ValueAnalysisTransferRe
               + intervalEndImpliesValue);*/
 
       if ((!intervalStartImpliesValue && !startRangeValue.isNull())) {
-
-
         if (truthValue) {
-          if (rvi1.isLeftUnbounded()) {
+          /*if (rvi1.isLeftUnbounded()) {
             return null;
-          }
+          }*/
           // System.out.println("Then case." + element.getRangeValueInterval());
           return element;
         }
