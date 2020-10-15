@@ -184,14 +184,6 @@ public class PathrangeGenerator {
   private String buildRangeValueFromModel(List<ValueAssignment> model) {
     ArrayList<String> foundModelChunks = new ArrayList();
 
-    /*ArrayList<ValueAssignment> modelCopy = new ArrayList(model);
-
-    Collections.sort(modelCopy, new Comparator<ValueAssignment>(){
-      public int compare(ValueAssignment va1, ValueAssignment va2){
-        return va1.getName().compareTo(va2.getName());
-      }
-    });*/
-
     ArrayList rangeChunksList = new ArrayList<String>();
     for(ValueAssignment va : model) {
 
