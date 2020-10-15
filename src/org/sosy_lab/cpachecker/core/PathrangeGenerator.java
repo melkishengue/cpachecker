@@ -109,11 +109,12 @@ public class PathrangeGenerator {
     List<ValueAssignment> model = new ArrayList<>();
     do {
       try {
-        model = constructModelAssignment(errorStates.iterator().next());
+        model = constructModelAssignment(errorStates);
         modelExists = true;
       } catch (SolverException e ) {
         logger.log(Level.WARNING, "No model found, backtracking.");
-        errorStates.remove(errorStates.size() - 1);
+        // list is in reversed order so the first element is in fact the last one
+        errorStates.remove(0);
       }
     } while (!modelExists);
 
@@ -131,7 +132,7 @@ public class PathrangeGenerator {
     RangeUtils.saveRangeToFile("output/pathrange.txt", range);
   }
 
-  public List<ValueAssignment> constructModelAssignment(ARGState targetState) throws InterruptedException, CPATransferException, SolverException {
+  /*public List<ValueAssignment> constructModelAssignment(ARGState targetState) throws InterruptedException, CPATransferException, SolverException {
     // TODO is it enough to consider only the first target state ?
     // thte first one is the left most target state. So the other target states will be ignored here
     // but included in the output range and later on processed by other analysis
@@ -141,14 +142,14 @@ public class PathrangeGenerator {
     logger.log(Level.INFO, "Generating path range for location " + loc);
     Set<ARGState> statesOnErrorPath = ARGUtils.getAllStatesOnPathsTo(targetState);
     return constructModelAssignment(statesOnErrorPath);
-  }
+  }*/
 
-  public List<ValueAssignment> constructModelAssignment(Set<ARGState> statesOnErrorPath) throws InterruptedException, CPATransferException, SolverException {
+  public List<ValueAssignment> constructModelAssignment(List<ARGState> statesOnErrorPath) throws InterruptedException, CPATransferException, SolverException {
     logger.log(Level.INFO, "Timedout path: " + PathrangeGenerator.constructPath(statesOnErrorPath));
     // get the branchingFormula
     // this formula contains predicates for all branches we took
     // using this we can compute which input values would make the program follow that path
-    BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(statesOnErrorPath);
+    BooleanFormula branchingFormula = pmgr.buildBranchingFormulaSinglePath(new HashSet<>(statesOnErrorPath));
 
     // logger.log(Level.INFO, "branchingFormula = " + branchingFormula);
 
@@ -221,21 +222,17 @@ public class PathrangeGenerator {
     StringBuilder sb = new StringBuilder();
     List<ARGState> list = new ArrayList<>(statesOnErrorPath);
 
-    for (int i = list.size() - 1; i >= 0 ; i--) {
-      ARGState state = list.get(i);
-      LocationState loc = AbstractStates.extractStateByType(state, LocationState.class);
+    Lists.reverse(list).forEach(pState -> {
+      LocationState loc = AbstractStates.extractStateByType(pState, LocationState.class);
+      sb.append("(" + loc.getOutgoingEdges().iterator().next().getCode() + ") -> ");
+    });
+    sb.append("[TIMEOUT]");
 
-      Iterable<CFAEdge> edges = loc.getIngoingEdges();
-      Iterator<CFAEdge> iter = edges.iterator();
-      if (iter.hasNext()) {
-        sb.append("(" + iter.next().getCode() + ") --> ");
-      }
-    }
-
-    return sb.toString() + "[TIMEOUT]";
+    return sb.toString();
   }
 
   public static ArrayList<ARGState> generateLastPathFromReachedSet(UnmodifiableReachedSet pReached) {
+    System.out.println("pReached.size() = " + pReached.size());
     ARGState pathElement = (ARGState)pReached.getFirstState();
     boolean endOfPath = false;
     ArrayList<ARGState> statesOnLastPath = new ArrayList<>();
