@@ -224,7 +224,9 @@ public class PathrangeGenerator {
 
     Lists.reverse(list).forEach(pState -> {
       LocationState loc = AbstractStates.extractStateByType(pState, LocationState.class);
-      sb.append("(" + loc.getOutgoingEdges().iterator().next().getCode() + ") -> ");
+      if (loc.getOutgoingEdges().iterator().hasNext()) {
+        sb.append("(" + loc.getOutgoingEdges().iterator().next().getCode() + ") -> ");
+      }
     });
     sb.append("[TIMEOUT]");
 
@@ -232,7 +234,6 @@ public class PathrangeGenerator {
   }
 
   public static ArrayList<ARGState> generateLastPathFromReachedSet(UnmodifiableReachedSet pReached) {
-    System.out.println("pReached.size() = " + pReached.size());
     ARGState pathElement = (ARGState)pReached.getFirstState();
     boolean endOfPath = false;
     ArrayList<ARGState> statesOnLastPath = new ArrayList<>();

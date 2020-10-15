@@ -777,28 +777,11 @@ public class CPAMain {
       closer.close();
     }
 
-    /*
-    at the end,
-    - check if target states exists. If yes, last path was not successfully verified --> open range. If no closed range.
-     */
-
-    /*String pathrangeFile = "output/pathrange.txt";
-    if (!RangeUtils.rangeFileExists(pathrangeFile)) {*/
-      ArrayList<ARGState> statesOnLastPath = PathrangeGenerator.generateLastPathFromReachedSet(mResult.getReached());
-      PathrangeGenerator pathrangeGenerator = new PathrangeGenerator(cpachecker.getCPA(), mResult.getReached(), logManager);
-      try {
-        pathrangeGenerator.generatePathrange(Lists.reverse(statesOnLastPath));
-      } catch(Exception e) {
-        System.out.println("e = " + e);
-      }
-    // }
-
-      // export report
-      if (mResult.getResult() != Result.NOT_YET_STARTED) {
-        reportGenerator.generate(
-            mResult.getResult(), mResult.getCfa(), mResult.getReached(), statistics.toString());
-      }
-
+    // export report
+    if (mResult.getResult() != Result.NOT_YET_STARTED) {
+      reportGenerator.generate(
+          mResult.getResult(), mResult.getCfa(), mResult.getReached(), statistics.toString());
+    }
   }
 
   @SuppressFBWarnings(
