@@ -266,5 +266,4 @@ public class PathrangeGenerator {
 
     return statesOnLastPath;
   }
-
 }
