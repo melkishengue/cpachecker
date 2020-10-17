@@ -50,7 +50,6 @@ public final class UnknownValueAssigner implements MemoryLocationValueHandler {
       ValueAnalysisState pState,
       @Nullable ExpressionValueVisitor pValueVisitor) {
 
-    System.out.println("here !" + pMemLocation);
     pState.forget(pMemLocation);
   }
 }
