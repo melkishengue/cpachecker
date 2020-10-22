@@ -235,7 +235,12 @@ public class PathrangeGenerator {
           from(childrenInReached).transform(pathElement::getEdgeToChild);
 
       if (outgoingEdges.size() == 0) {
-        endOfPath = true;
+        // check if element is covered
+        if(pathElement.isCovered()) {
+          next = pathElement.getCoveringState();
+        } else {
+          endOfPath = true;
+        }
       } else {
         if (outgoingEdges.size() == 1) {
           // add element to list and continue
