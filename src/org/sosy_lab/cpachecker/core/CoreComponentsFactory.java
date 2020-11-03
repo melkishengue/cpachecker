@@ -490,7 +490,7 @@ public class CoreComponentsFactory {
         }
       }
 
-      algorithm = GeneratePathrangeAlgorithm.create(config, algorithm, cpa, specification, logger, shutdownNotifier, cfa);
+      // algorithm = GeneratePathrangeAlgorithm.create(config, algorithm, cpa, specification, logger, shutdownNotifier, cfa);
 
       algorithm =
           ExceptionHandlingAlgorithm.create(

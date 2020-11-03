@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 1.9//EN" "https://www.sosy-lab.org/benchexec/benchmark-1.9.dtd">
+<benchmark tool="cpachecker" timelimit="15 min" hardtimelimit="16 min" memlimit="15 GB" cpuCores="1">
+
+<require cpuModel="Intel Xeon E3-1230 v5 @ 3.40 GHz" cpuCores="8"/>
+
+  <resultfiles>**.graphml</resultfiles>
+
+  <option name="-svcomp21"/>
+  <option name="-heap">10000M</option>
+  <option name="-benchmark"/>
+  <option name="-timelimit">900 s</option>
+
+<rundefinition name="sv-comp21_prop-reachsafety">
+  <tasks name="ReachSafety-Arrays">
+    <includesfile>../doc/examples/benchmarks/c/ReachSafety-Arrays.set</includesfile>
+    <propertyfile>../doc/examples/benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+  <tasks name="ReachSafety-BitVectors">
+    <includesfile>../doc/examples/benchmarks/c/ReachSafety-BitVectors.set</includesfile>
+    <propertyfile>../doc/examples/benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+  <tasks name="ReachSafety-ControlFlow">
+    <includesfile>../doc/examples/benchmarks/c/ReachSafety-ControlFlow.set</includesfile>
+    <propertyfile>../doc/examples/benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+  <tasks name="ReachSafety-ECA">
+    <includesfile>../doc/examples/benchmarks/c/ReachSafety-ECA.set</includesfile>
+    <propertyfile>../doc/examples/benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+  <tasks name="ReachSafety-Floats">
+    <includesfile>../doc/examples/benchmarks/c/ReachSafety-Floats.set</includesfile>
+    <propertyfile>../doc/examples/benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+  <tasks name="ReachSafety-Heap">
+    <includesfile>../doc/examples/benchmarks/c/ReachSafety-Heap.set</includesfile>
+    <propertyfile>../doc/examples/benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+  <tasks name="ReachSafety-Loops">
+    <includesfile>../doc/examples/benchmarks/c/ReachSafety-Loops.set</includesfile>
+    <propertyfile>../doc/examples/benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+  <tasks name="ReachSafety-ProductLines">
+    <includesfile>../doc/examples/benchmarks/c/ReachSafety-ProductLines.set</includesfile>
+    <propertyfile>../doc/examples/benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+  <tasks name="ReachSafety-Recursive">
+    <includesfile>../doc/examples/benchmarks/c/ReachSafety-Recursive.set</includesfile>
+    <propertyfile>../doc/examples/benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+  <tasks name="ReachSafety-Sequentialized">
+    <includesfile>../doc/examples/benchmarks/c/ReachSafety-Sequentialized.set</includesfile>
+    <propertyfile>../doc/examples/benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+
+  <tasks name="ConcurrencySafety-Main">
+    <includesfile>../doc/examples/benchmarks/c/ConcurrencySafety-Main.set</includesfile>
+    <propertyfile>../doc/examples/benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+
+  <tasks name="SoftwareSystems-AWS-C-Common-ReachSafety">
+    <includesfile>../doc/examples/benchmarks/c/SoftwareSystems-AWS-C-Common-ReachSafety.set</includesfile>
+    <propertyfile>../doc/examples/benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+  <tasks name="SoftwareSystems-DeviceDriversLinux64-ReachSafety">
+    <includesfile>../doc/examples/benchmarks/c/SoftwareSystems-DeviceDriversLinux64-ReachSafety.set</includesfile>
+    <propertyfile>../doc/examples/benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+</rundefinition>
+
+
+
+</benchmark>
