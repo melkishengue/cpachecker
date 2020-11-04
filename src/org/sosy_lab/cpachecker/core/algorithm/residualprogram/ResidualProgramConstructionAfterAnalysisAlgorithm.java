@@ -169,7 +169,7 @@ public class ResidualProgramConstructionAfterAnalysisAlgorithm
 
     argRoot = result.getFirst();
 
-    Set<ARGState> addPragma;
+    Set<ARGState> addPragma = null;
     try {
       statistic.collectPragmaPointsTimer.stop();
       switch (getStrategy()) {
@@ -182,8 +182,14 @@ public class ResidualProgramConstructionAfterAnalysisAlgorithm
         default: // CONDITION no effect
           addPragma = null;
       }
+    } catch(Exception e) {
+      System.out.println("e = " + e);
     } finally {
-      statistic.collectPragmaPointsTimer.stop();
+      try{
+        statistic.collectPragmaPointsTimer.stop();  
+      } catch(Exception e) {
+        System.out.println("e = " + e);
+      }
     }
 
     if(!writeResidualProgram(argRoot, addPragma)) {
