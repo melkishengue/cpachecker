@@ -1532,6 +1532,9 @@ cpa.functionpointer.ignoreUnknownFunctionPointerCalls = false
 # in order to find calls to such pointers
 cpa.functionpointer.trackInvalidFunctionPointers = false
 
+# generate a path range after a timeout exception has occurred
+cpa.generateRangeAfterTimeout = false
+
 # which default SecurityClass to use for PolicyEnforcementCPA
 cpa.ifcsecurity.defaultsc = "LOW"
 
@@ -1766,6 +1769,9 @@ cpa.lpi.wideningThreshold = -1
 # time limit for a single post computation (use milliseconds or specify a
 # unit; 0 for infinite)
 cpa.monitor.limit = 0
+
+# maximum number of steps of exploring the CFA
+cpa.monitor.pathcomputationlengthlimit = 0
 
 # time limit for all computations on a path in milliseconds (use milliseconds
 # or specify a unit; 0 for infinite)
@@ -2961,6 +2967,10 @@ cpa.value.optimizeBooleanVariables = true
 # a path range.
 cpa.value.pathrange = "(null, null)"
 
+# Defines the file where the path should be read from. This property has
+# precedence over the pathrange property.
+cpa.value.pathrangeFile = no default value
+
 # Defines whether ranged symbolic execution should be performed.
 cpa.value.performRse = false
 
@@ -3448,6 +3458,9 @@ parser.transformTokensToLines = false
 # file numbers printed by CPAchecker will refer to the pre-processed file,
 # not the original input file.
 parser.usePreprocessor = false
+
+# generate a path range after a timeout exception has occurred
+pathrange.generateRangeAfterTimeout = false
 
 # Specifies the mode how HW requirements are detected in the proof.
 pcc.HWrequirements.extraction.mode = OPERATOR

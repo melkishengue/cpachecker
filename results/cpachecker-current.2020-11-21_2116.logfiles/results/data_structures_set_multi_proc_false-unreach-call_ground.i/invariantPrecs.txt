@@ -1,0 +1,20 @@
+(set-info :source |printed by MathSAT|)
+
+elem_exists N17:
+(assert true)
+
+main N33:
+(assert true)
+
+main N38:
+(assert false)
+
+main N46:
+(assert true)
+
+main N56:
+(assert false)
+
+main N61:
+(assert false)
+

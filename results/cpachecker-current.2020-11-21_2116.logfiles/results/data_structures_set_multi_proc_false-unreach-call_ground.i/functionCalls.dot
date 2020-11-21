@@ -1,0 +1,13 @@
+digraph functioncalls {
+rankdir=LR;
+
+main [shape="box", color=blue];
+__VERIFIER_error [label="__VERIFIER_error", shape="box", color=grey];
+__VERIFIER_assert -> __VERIFIER_error;
+__VERIFIER_assert [label="__VERIFIER_assert", ];
+main -> __VERIFIER_assert;
+elem_exists [label="elem_exists", ];
+main -> elem_exists;
+insert [label="insert", ];
+main -> insert;
+}
