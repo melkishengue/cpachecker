@@ -183,12 +183,12 @@ public class ResidualProgramConstructionAfterAnalysisAlgorithm
           addPragma = null;
       }
     } catch(Exception e) {
-      System.out.println("e = " + e);
+      System.out.println("e1 = " + e);
     } finally {
       try{
         statistic.collectPragmaPointsTimer.stop();  
       } catch(Exception e) {
-        System.out.println("e = " + e);
+        System.out.println("e2 = " + e);
       }
     }
 
@@ -196,6 +196,8 @@ public class ResidualProgramConstructionAfterAnalysisAlgorithm
       throw new CPAException("Failed to write residual program.");
     }
 
+    status = AlgorithmStatus.UNSOUND_AND_IMPRECISE;
+    System.out.println("status = " + status);
     return status;
   }
 
