@@ -197,7 +197,6 @@ public class ResidualProgramConstructionAfterAnalysisAlgorithm
     }
 
     status = AlgorithmStatus.UNSOUND_AND_IMPRECISE;
-    System.out.println("status = " + status);
     return status;
   }
 

@@ -26,21 +26,21 @@ public class RangeValueMain {
     // String rawRangeInterval = "(null, (main::min::a=1 main::min::b=2)]";
     Range range = new Range(rawRangeInterval);
 
-    System.out.println(range);
+    /* System.out.println(range);
 
     System.out.println("The start range is null: " + range.isLeftUnbounded());
     System.out.println("The end range is null: " + range.isRightUnbounded());
 
     System.out.println("Start range is: " + range.startRange());
-    System.out.println("End range is: " + range.endRange());
+    System.out.println("End range is: " + range.endRange());*/
 
     // build a range from range values
     RangeValue startRange = new RangeValue("null");
     RangeValue endRange = new RangeValue("main::min::a=1 main::min::b=2");
 
     RangeValueInterval rvi = new RangeValueInterval(startRange, endRange);
-    System.out.println(rvi);
+    // System.out.println(rvi);
 
-    System.out.println(rvi.getEndRange().getVariablesMapFullyQualified());
+    // System.out.println(rvi.getEndRange().getVariablesMapFullyQualified());
   }
 }

@@ -153,8 +153,6 @@ class CParserUtils {
    * @return "void test() { " + body + ";}";
    */
   private static String addFunctionDeclaration(String pBody) {
-    // return "void test() {false;}";
-    
     if (pBody.trim().endsWith(";")) {
       return "void test() { " + pBody + "}";
     } else {
@@ -197,7 +195,6 @@ class CParserUtils {
       throws InvalidAutomatonException, InterruptedException {
     List<CAstNode> statements;
     try {
-      System.out.println("code = " + code);
       statements = parser.parseStatements(code, scope);
     } catch (CParserException e) {
       throw new InvalidAutomatonException("Code cannot be parsed: <" + code + ">", e);
