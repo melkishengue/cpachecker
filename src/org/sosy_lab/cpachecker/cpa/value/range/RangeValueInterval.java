@@ -73,9 +73,9 @@ public class RangeValueInterval {
       this.isLeftUnbounded = rawRangeValue.charAt(0) == ']';
       this.isRightUnbounded = rawRangeValue.charAt(rawRangeValue.length() - 1) == '[';
 
-      System.out.println("rawRangeValue = " + rawRangeValue);
+      /*System.out.println("rawRangeValue = " + rawRangeValue);
       System.out.println("--> isLeftUnbounded = " + this.isLeftUnbounded);
-      System.out.println("--> isRightUnbounded = " + this.isRightUnbounded);
+      System.out.println("--> isRightUnbounded = " + this.isRightUnbounded);*/
 
       String rawRangeValueNoBraces = rawRangeValue;
       // remove eventual first and last braces

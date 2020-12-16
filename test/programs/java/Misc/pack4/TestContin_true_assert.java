@@ -25,9 +25,6 @@ public class TestContin_true_assert {
     }
   }
 
-  System.out.println(y);
-
-
   assert z == 2; // 2 loops above, so z == 2 always true
   }
 }

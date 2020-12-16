@@ -438,7 +438,6 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
   @Override
   public BooleanFormula buildBranchingFormula(Set<ARGState> elementsOnPath, Map<Pair<ARGState,CFAEdge>, PathFormula> parentFormulasOnPath)
       throws CPATransferException, InterruptedException {
-    System.out.println("---Called");
     // build the branching formula that will help us find the real error path
     List<BooleanFormula> branchingFormula = new ArrayList<>();
     for (final ARGState pathElement : elementsOnPath) {

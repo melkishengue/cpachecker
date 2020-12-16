@@ -72,8 +72,6 @@ public class StatementTransferRelation implements TransferRelation {
     CFANode node = ((StatementState) element).getLocationNode();
     List<StatementState> l =
         CFAUtils.successorsOf(node).transform(n -> factory.getState(n)).toList();
-    System.out.println("Here is the list");
-    System.out.println(l);
     return l;
   }
 }

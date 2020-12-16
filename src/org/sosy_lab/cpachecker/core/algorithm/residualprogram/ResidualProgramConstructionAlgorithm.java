@@ -194,7 +194,6 @@ public class ResidualProgramConstructionAlgorithm implements Algorithm, Statisti
   @Override
   public AlgorithmStatus run(ReachedSet pReachedSet)
       throws CPAException, InterruptedException, CPAEnabledAnalysisPropertyViolationException {
-    System.out.println("Running...");
     Preconditions.checkState(checkInitialState(pReachedSet.getFirstState()),
         "CONDITION, CONDITION_PLUS_FOLD, and COMBINATION strategy require assumption automaton (condition) and assumption guiding automaton in specification");
     Preconditions.checkNotNull(cpaAlgorithm);
