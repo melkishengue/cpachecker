@@ -205,7 +205,6 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
         Configuration config, ShutdownNotifier pShutdownNotifier) throws InvalidConfigurationException {
 
       config.inject(this);
-      System.out.println("this.generateRangeAfterTimeout = " + this.generateRangeAfterTimeout);
       this.cpa = cpa;
       this.logger = logger;
       this.shutdownNotifier = pShutdownNotifier;
@@ -297,14 +296,6 @@ public class CPAAlgorithm implements Algorithm, StatisticsProvider {
       try {
         if (handleState(state, precision, reachedSet)) {
           // Prec operator requested break
-          if (this.generateRangeAfterTimeout) {
-            // create one element list of path where exception occurred
-            ArrayList<ARGPath> paths = new ArrayList();
-            ARGPath pathToError = ARGUtils.getOnePathTo((ARGState)state);
-            paths.add(pathToError);
-
-            throw new CPATimeoutException("Timeout exception occurred", paths);
-          }
 
           return status;
         }

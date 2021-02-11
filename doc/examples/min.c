@@ -8,10 +8,10 @@ int main (int a, int b, int c) {
 	// ERROR: __VERIFIER_error(); // (main::a=1 main::b=4 main::c=5)
 	// a = a+2; // 3
 
-	// a = b - c; // -1
-	// b = b*2; // 0, c = 1
+	a = b - c; // -1
+	b = b*2; // 0, c = 1
 
-	// c = c + 1; // 1
+	c = c + 1; // 1
 
 	if (a < b) { // 
 		if (b < c) {

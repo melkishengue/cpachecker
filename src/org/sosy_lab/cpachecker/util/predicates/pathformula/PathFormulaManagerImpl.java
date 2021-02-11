@@ -552,23 +552,21 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
         continue;
       }
 
+
+
       CFAEdge edge = Iterables.getOnlyElement(outgoingEdges);
-      // System.out.println("--------------------------------------");
-      // System.out.println("edge = " + edge + ". " + edge.getEdgeType());
 
       if ((edge.getEdgeType() == CFAEdgeType.BlankEdge)) {
         continue;
       }
+
+
       
       Pair<ARGState,CFAEdge> key = Pair.of(pathElement, edge);
       PathFormula pf = parentFormulasOnPath.get(key);
 
       if(pf == null) {
         PredicateAbstractState pe = AbstractStates.extractStateByType(pathElement, PredicateAbstractState.class);
-        ConstraintsState ca = AbstractStates.extractStateByType(pathElement, ConstraintsState.class);
-
-        // AssumeEdge assumeEdge = (AssumeEdge)edge;
-        // boolean truthValue = assumeEdge.getTruthAssumption();
 
         if (pe == null) {
           logger.log(Level.WARNING, "Cannot find precise error path information without PredicateCPA");
@@ -578,8 +576,6 @@ public class PathFormulaManagerImpl implements PathFormulaManager {
         }
         pf = this.makeEmptyPathFormula(pf);
         pf = this.makeAnd(pf, edge);        // conjunct with edge
-
-        // System.out.println("--> pf = " + pf);
 
         pf.getFormula();
 

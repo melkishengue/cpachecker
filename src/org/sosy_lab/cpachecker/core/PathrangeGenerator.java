@@ -34,23 +34,25 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
+import org.sosy_lab.common.ShutdownNotifier;
+import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.log.LogManager;
+import org.sosy_lab.cpachecker.cfa.CFA;
 import org.sosy_lab.cpachecker.cfa.model.AssumeEdge;
 import org.sosy_lab.cpachecker.cfa.model.CFAEdge;
-import org.sosy_lab.cpachecker.core.algorithm.bmc.BMCAlgorithm;
 import org.sosy_lab.cpachecker.core.algorithm.bmc.ProverEnvironmentWithFallback;
 import org.sosy_lab.cpachecker.core.interfaces.ConfigurableProgramAnalysis;
 import org.sosy_lab.cpachecker.core.reachedset.UnmodifiableReachedSet;
 import org.sosy_lab.cpachecker.cpa.arg.ARGState;
 import org.sosy_lab.cpachecker.cpa.location.LocationState;
-import org.sosy_lab.cpachecker.cpa.predicate.PredicateCPA;
 import org.sosy_lab.cpachecker.cpa.value.ValueAnalysisState;
 import org.sosy_lab.cpachecker.cpa.value.range.RangeUtils;
+import org.sosy_lab.cpachecker.exceptions.CPAException;
 import org.sosy_lab.cpachecker.exceptions.CPATransferException;
 import org.sosy_lab.cpachecker.util.AbstractStates;
-import org.sosy_lab.cpachecker.util.CPAs;
 import org.sosy_lab.cpachecker.util.predicates.pathformula.PathFormulaManager;
+import org.sosy_lab.cpachecker.util.predicates.pathformula.PathFormulaManagerImpl;
 import org.sosy_lab.cpachecker.util.predicates.smt.BooleanFormulaManagerView;
 import org.sosy_lab.cpachecker.util.predicates.smt.FormulaManagerView;
 import org.sosy_lab.cpachecker.util.predicates.smt.Solver;
@@ -65,32 +67,31 @@ public class PathrangeGenerator {
   private final FormulaManagerView fmgr;
   private final PathFormulaManager pmgr;
   private final BooleanFormulaManagerView bfmgr;
+  private final ShutdownNotifier shutdownNotifier;
+  private final CFA cfa;
   private final Solver solver;
   private final ProverEnvironmentWithFallback pProver;
   ConfigurableProgramAnalysis cpa;
   LogManager logger;
   UnmodifiableReachedSet reached;
 
-  public PathrangeGenerator(ConfigurableProgramAnalysis pCpa, UnmodifiableReachedSet pReached, LogManager pLogger) {
+  public PathrangeGenerator(ConfigurableProgramAnalysis pCpa, UnmodifiableReachedSet pReached, LogManager pLogger, Configuration config, ShutdownNotifier pShutdownNotifier, CFA pCfa) throws InvalidConfigurationException,
+                                                                                                                                                                                              CPAException, InterruptedException {
     this.cpa = pCpa;
     this.logger = pLogger;
     this.reached = pReached;
+    this.shutdownNotifier = pShutdownNotifier;
+    this.cfa = pCfa;
 
-    @SuppressWarnings("resource")
-    PredicateCPA predCpa = null;
-    try {
-      predCpa = CPAs.retrieveCPAOrFail(this.cpa, PredicateCPA.class, BMCAlgorithm.class);
-    } catch (InvalidConfigurationException pE) {
-      pE.printStackTrace();
-    }
-    solver = predCpa.getSolver();
+    solver = Solver.create(config, logger, pShutdownNotifier);
     fmgr = solver.getFormulaManager();
     bfmgr = fmgr.getBooleanFormulaManager();
-    pmgr = predCpa.getPathFormulaManager();
+    PathFormulaManager pfMgr = new PathFormulaManagerImpl(fmgr, config, logger, shutdownNotifier, cfa, AnalysisDirection.FORWARD);
+    pmgr = pfMgr;
     pProver = new ProverEnvironmentWithFallback(solver, ProverOptions.GENERATE_MODELS);
   }
 
-  public void generatePathrange (List<ARGState> errorStates) throws InterruptedException, CPATransferException {
+  public void generatePathrange (List<ARGState> errorStates, String pathRangeFilePath) throws InterruptedException, CPATransferException {
     // check if error occurred
     Set<ARGState> targetStates =
         from(errorStates)
@@ -101,13 +102,13 @@ public class PathrangeGenerator {
     boolean errorOccurred = targetStates.size() > 0;
     boolean modelExists = false;
     List<ValueAssignment> model = new ArrayList<>();
+
     do {
       try {
         model = constructModelAssignment(errorStates);
         modelExists = true;
       } catch (SolverException e ) {
         logger.log(Level.WARNING, "No model found, backtracking.");
-        // list is in reversed order so the first element is in fact the last one
         errorStates.remove(0);
       }
     } while (!modelExists);
@@ -117,29 +118,16 @@ public class PathrangeGenerator {
         rootVAState = AbstractStates.extractStateByType(reached.getFirstState(), ValueAnalysisState.class);
     String rootStateEndRange = rootVAState.getRangeValueInterval().getEndRange().getRawRange();
 
-    // TODO: handle closing bracket here
-    String range = (!errorOccurred ? "]" : "[") + rangeValue + ", " + rootStateEndRange + "]";
+    String range =  "[" + rangeValue + ", " + rootStateEndRange + "]";
     if (errorOccurred) {
       logger.log(Level.INFO, "Path " + rangeValue + " could not be verified entirely, thus included in generated range");
     }
     logger.log(Level.INFO, "Generated range: " + range);
-    RangeUtils.saveRangeToFile("output/pathrange.txt", range);
+    RangeUtils.saveRangeToFile(pathRangeFilePath, range);
   }
 
-  /*public List<ValueAssignment> constructModelAssignment(ARGState targetState) throws InterruptedException, CPATransferException, SolverException {
-    // TODO is it enough to consider only the first target state ?
-    // thte first one is the left most target state. So the other target states will be ignored here
-    // but included in the output range and later on processed by other analysis
-    // get parent of target state
-    LocationState loc = AbstractStates.extractStateByType(targetState, LocationState.class);
-    // logger.log(Level.INFO, "-----------------------------------------------------------------------------");
-    logger.log(Level.INFO, "Generating path range for location " + loc);
-    Set<ARGState> statesOnErrorPath = ARGUtils.getAllStatesOnPathsTo(targetState);
-    return constructModelAssignment(statesOnErrorPath);
-  }*/
-
   public List<ValueAssignment> constructModelAssignment(List<ARGState> statesOnErrorPath) throws InterruptedException, CPATransferException, SolverException {
-    logger.log(Level.INFO, "Timedout path: " + PathrangeGenerator.constructPath(statesOnErrorPath));
+    logger.log(Level.INFO, "Last visited path: " + PathrangeGenerator.constructPath(statesOnErrorPath));
     // get the branchingFormula
     // this formula contains predicates for all branches we took
     // using this we can compute which input values would make the program follow that path
